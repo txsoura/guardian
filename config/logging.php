@@ -37,7 +37,7 @@ return [
     'channels' => [
         'stack' => [
             'driver' => 'stack',
-            'channels' => ['single'],
+            'channels' => ['daily', 'rollbar'],
             'ignore_exceptions' => false,
         ],
 
@@ -91,9 +91,11 @@ return [
             'level' => env('LOG_LEVEL', 'debug'),
         ],
 
-        'null' => [
+        'rollbar' => [
             'driver' => 'monolog',
-            'handler' => NullHandler::class,
+            'handler' => \Rollbar\Laravel\MonologHandler::class,
+            'access_token' => env('ROLLBAR_TOKEN'),
+            'level' => 'error',
         ],
 
         'emergency' => [

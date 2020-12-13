@@ -16,6 +16,7 @@
         "laravel/socialite": "^5.1",
         "laravel/tinker": "^2.5",
         "myclabs/php-enum": "^1.7",
+        "rollbar/rollbar-laravel": "^7.0",
         "spatie/laravel-permission": "^3.18",
         "tymon/jwt-auth": "^1.0"
     },

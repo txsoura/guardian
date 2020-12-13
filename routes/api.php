@@ -21,3 +21,7 @@ Route::get('/v1', function () {
         'locale' => app()->getLocale(),
     ];
 });
+
+Route::fallback(function () {
+    return response()->json(['message' => trans('message.not_found'), 'error' => trans('message.route_not_found')], 404);
+});

@@ -2,26 +2,14 @@
 
 namespace App\Http\Controllers\Auth;
 
-use App\Enums\UserRole;
+use App\Models\User;
 use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
-use App\Http\Resources\CentralDeliveryResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Foundation\Auth\ThrottlesLogins;
-
-use App\Http\Resources\CustomerResource;
-use App\Http\Resources\DriverResource;
-use App\Http\Resources\ManagerResource;
-use App\Http\Resources\SellerResource;
-use App\Models\CentralDelivery;
-use App\Models\Customer;
-use App\Models\Driver;
-use App\Models\Manager;
-use App\Models\Seller;
-use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;

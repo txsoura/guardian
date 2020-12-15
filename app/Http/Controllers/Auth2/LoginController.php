@@ -50,6 +50,7 @@ class LoginController extends Controller
      */
     public function login(Request $request)
     {
+        \Log::info('login');
         $this->validateLogin($request);
 
         // If the class is using the ThrottlesLogins trait, we can automatically throttle

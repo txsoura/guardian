@@ -33,6 +33,8 @@ Route::fallback(function () {
     return response()->json(['message' => trans('message.not_found'), 'error' => trans('message.route_not_found')], 404);
 });
 
+require __DIR__.'/auth.php';
+
 // Route::group(['prefix' => 'v1/auth', 'middleware' => 'api'], function () {
     // Route::post('login', [LoginController::class, 'login']);
     Route::get('{provider}/callback', [LoginController::class, 'handleProviderCallback']);
@@ -51,7 +53,7 @@ Route::fallback(function () {
     // Route::post('password/reset', [ResetPasswordController::class, 'reset']);
 // });
 
-Route::group(['prefix' => 'v1', 'middleware' => ['jwt.auth']], function () {
+Route::group(['prefix' => 'v1'], function () {
     Route::apiResource('users', UserController::class);
     Route::put('users/{user}/approve', [UserController::class, 'approve']);
     Route::put('users/{user}/block', [UserController::class, 'block']);

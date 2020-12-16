@@ -28,11 +28,14 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request)
     {
-        $request->authenticate();
+        return $this->respondWithToken($request->authenticate());
 
-        $request->session()->regenerate();
+        // $request->session()->regenerate();
 
-        return redirect(RouteServiceProvider::HOME);
+        // return redirect(RouteServiceProvider::HOME);
+        // return response()->json([
+        //     'message' =>  trans('auth.logged_in')
+        // ]);
     }
 
     /**
@@ -69,7 +72,7 @@ class AuthenticatedSessionController extends Controller
      */
     public function refresh()
     {
-        return $this->respondWithToken(auth()->refresh());
+        return $this->respondWithToken(Auth::refresh());
     }
 
     /**
@@ -88,5 +91,4 @@ class AuthenticatedSessionController extends Controller
             'expires_in' => auth()->factory()->getTTL() * 60
         ], 200);
     }
-
 }

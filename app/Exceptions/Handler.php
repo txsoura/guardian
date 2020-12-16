@@ -2,6 +2,7 @@
 
 namespace App\Exceptions;
 
+use Exception;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
@@ -110,6 +111,12 @@ class Handler extends ExceptionHandler
                     'message' => trans('auth.not_found'),
                     'error' => trans('auth.user_not_found')
                 ], 404);
+            }
+            if ($e->getMessage() === 'Pendent or blocked user cannot login') {
+                return response()->json([
+                    'message' => trans('message.no_access'),
+                    'error' => trans('auth.pendent_or_blocked')
+                ], 403);
             }
 
             return parent::render($request, $e);

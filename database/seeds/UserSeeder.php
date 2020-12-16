@@ -1,7 +1,5 @@
 <?php
 
-namespace Database\Seeders;
-
 use App\Enums\UserStatus;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\App;

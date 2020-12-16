@@ -20,6 +20,8 @@ class CreatePersonalAccessTokensTable extends Migration
             $table->string('token', 64)->unique();
             $table->text('abilities')->nullable();
             $table->timestamp('last_used_at')->nullable();
+            $table->timestamp('expiration')->nullable();
+            $table->foreignId('user_id')->nullable()->constrained('users');
             $table->timestamps();
         });
     }

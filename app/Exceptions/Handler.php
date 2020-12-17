@@ -2,9 +2,9 @@
 
 namespace App\Exceptions;
 
-use Exception;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 use Throwable;
 use Tymon\JWTAuth\Exceptions\JWTException;
@@ -34,92 +34,108 @@ class Handler extends ExceptionHandler
     ];
 
     /**
-     * Register the exception handling callbacks for the application.
+     * Report or log an exception.
      *
+     * @param  \Throwable  $exception
      * @return void
+     *
+     * @throws \Throwable
      */
-    public function register()
+    public function report(Throwable $exception)
     {
-        $this->renderable(function (Throwable $e, $request) {
-            if ($e instanceof ModelNotFoundException && $request->wantsJson()) {
-                return response()->json([
-                    'message' => trans('message.not_found'),
-                    'error' => trans('message.entry_not_found', ['model' => str_replace('App\\Models\\', '', $e->getModel())])
-                ], 404);
-            }
+        parent::report($exception);
+    }
 
-            if ($e instanceof UnauthorizedHttpException) {
-                $preException = $e->getPrevious();
-                if ($preException instanceof
-                    TokenExpiredException
-                ) {
-                    return response()->json([
-                        'message' => trans('auth.unauthenticated'),
-                        'error' => trans('auth.token_expired')
-                    ], 401);
-                } else if ($preException instanceof
-                    TokenInvalidException
-                ) {
-                    return response()->json([
-                        'message' => trans('auth.unauthenticated'),
-                        'error' => trans('auth.token_invalid')
-                    ], 401);
-                } else if ($preException instanceof
-                    TokenBlacklistedException
-                ) {
-                    return response()->json([
-                        'message' => trans('auth.unauthenticated'),
-                        'error' => trans('auth.token_blacklisted')
-                    ], 401);
-                } else if ($preException instanceof
-                    JWTException
-                ) {
-                    return response()->json([
-                        'message' => trans('auth.unauthenticated'),
-                        'error' => trans('auth.token_cannot_parse')
-                    ], 401);
-                }
+    /**
+     * Render an exception into an HTTP response.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \Throwable  $exception
+     * @return \Symfony\Component\HttpFoundation\Response
+     *
+     * @throws \Throwable
+     */
+    public function render($request, Throwable $exception)
+    {
 
-                if ($e->getMessage() === 'Token not provided') {
-                    return response()->json([
-                        'message' => trans('auth.unauthenticated'),
-                        'error' => trans('auth.token_not_provided')
-                    ], 401);
-                }
+        if ($exception instanceof ModelNotFoundException && $request->wantsJson()) {
+            return response()->json([
+                'message' => trans('message.not_found'),
+                'error' => trans('message.entry_not_found', ['model' => str_replace('App\\Models\\', '', $exception->getModel())])
+            ], 404);
+        }
 
-                //To log untreated unauthorized exceptions
-                \Log::error('UNAUTHORIZED_EXCEPTION:' . $e->getMessage());
+        if ($exception instanceof UnauthorizedHttpException) {
+            $preException = $exception->getPrevious();
+            if ($preException instanceof
+                TokenExpiredException
+            ) {
                 return response()->json([
                     'message' => trans('auth.unauthenticated'),
-                    'error' => trans('message.contact_support')
+                    'error' => trans('auth.token_expired')
                 ], 401);
-            }
-
-            if ($e instanceof
+            } else if ($preException instanceof
+                TokenInvalidException
+            ) {
+                return response()->json([
+                    'message' => trans('auth.unauthenticated'),
+                    'error' => trans('auth.token_invalid')
+                ], 401);
+            } else if ($preException instanceof
+                TokenBlacklistedException
+            ) {
+                return response()->json([
+                    'message' => trans('auth.unauthenticated'),
+                    'error' => trans('auth.token_blacklisted')
+                ], 401);
+            } else if ($preException instanceof
                 JWTException
             ) {
                 return response()->json([
                     'message' => trans('auth.unauthenticated'),
-                    'error' => trans('auth.already_logged_out')
-                ], 422);
+                    'error' => trans('auth.token_cannot_parse')
+                ], 401);
             }
 
-            if ($e instanceof
-                UnauthorizedHttpException
-            ) {
+            if ($exception->getMessage() === 'Token not provided') {
                 return response()->json([
-                    'message' => trans('auth.not_found'),
-                    'error' => trans('auth.user_not_found')
-                ], 404);
-            }
-            if ($e->getMessage() === 'Pendent or blocked user cannot login') {
-                return response()->json([
-                    'message' => trans('message.no_access'),
-                    'error' => trans('auth.pendent_or_blocked')
-                ], 403);
+                    'message' => trans('auth.unauthenticated'),
+                    'error' => trans('auth.token_not_provided')
+                ], 401);
             }
 
-            return parent::render($request, $e);
-        });
+            //To log untreated unauthorized exceptions
+            Log::error('UNAUTHORIZED_EXCEPTION:' . $exception->getMessage());
+            return response()->json([
+                'message' => trans('auth.unauthenticated'),
+                'error' => trans('message.contact_support')
+            ], 401);
+        }
+
+        if ($exception instanceof
+            JWTException
+        ) {
+            return response()->json([
+                'message' => trans('auth.unauthenticated'),
+                'error' => trans('auth.already_logged_out')
+            ], 422);
+        }
+
+        if ($exception instanceof
+            UnauthorizedHttpException
+        ) {
+            return response()->json([
+                'message' => trans('auth.not_found'),
+                'error' => trans('auth.user_not_found')
+            ], 404);
+        }
+        if ($exception->getMessage() === 'Pendent or blocked user cannot login') {
+            return response()->json([
+                'message' => trans('message.no_access'),
+                'error' => trans('auth.pendent_or_blocked')
+            ], 403);
+        }
+
+        return parent::render($request, $exception);
     }
 }

@@ -35,21 +35,21 @@ Route::fallback(function () {
 
 
 Route::group(['prefix' => 'v1/auth', 'middleware' => 'api'], function () {
-    Route::post('login', 'LoginController@login');
-    Route::get('{provider}/callback', 'LoginController@handleProviderCallback');
-    Route::get('me', 'LoginController@me')->middleware('jwt.auth');
-    Route::post('refresh', 'LoginController@refresh')->middleware('jwt.auth');
-    Route::post('logout', 'LoginController@logout')->middleware('jwt.auth');
+    Route::post('login', 'Auth\LoginController@login');
+    Route::get('{provider}/callback', 'Auth\LoginController@handleProviderCallback');
+    Route::get('me', 'Auth\LoginController@me')->middleware('jwt.auth');
+    Route::post('refresh', 'Auth\LoginController@refresh')->middleware('jwt.auth');
+    Route::post('logout', 'Auth\LoginController@logout')->middleware('jwt.auth');
 
-    Route::post('register', 'RegisterController@register');
+    Route::post('register', 'Auth\RegisterController@register');
 
-    Route::post('email/resend', 'VerificationController@resend');
-    Route::get('email/verify', 'VerificationController@notice');
-    Route::get('email/verify/{id}/{hash}', 'VerificationController@verify');
+    Route::post('email/resend', 'Auth\VerificationController@resend');
+    Route::get('email/verify', 'Auth\VerificationController@notice');
+    Route::get('email/verify/{id}/{hash}', 'Auth\VerificationController@verify');
 
-    Route::post('password/confirm', 'ConfirmPasswordController@confirm');
-    Route::post('password/email', 'ForgotPasswordController@sendResetLinkEmail');
-    Route::post('password/reset', 'ResetPasswordController@reset');
+    Route::post('password/confirm', 'Auth\ConfirmPasswordController@confirm');
+    Route::post('password/email', 'Auth\ForgotPasswordController@sendResetLinkEmail');
+    Route::post('password/reset', 'Auth\ResetPasswordController@reset');
 });
 
 Route::group(['prefix' => 'v1'], function () {

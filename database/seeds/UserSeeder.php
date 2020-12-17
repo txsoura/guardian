@@ -1,7 +1,5 @@
 <?php
 
-namespace Database\Seeders;
-
 use App\Enums\UserStatus;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\App;
@@ -31,7 +29,7 @@ class UserSeeder extends Seeder
         ]);
 
         if (App::environment('local', 'staging')) {
-            \App\Models\User::factory(10)->create();
+            factory(\App\Models\User::class, 5)->create();
         }
     }
 }

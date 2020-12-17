@@ -33,27 +33,28 @@ Route::fallback(function () {
     return response()->json(['message' => trans('message.not_found'), 'error' => trans('message.route_not_found')], 404);
 });
 
+
 Route::group(['prefix' => 'v1/auth', 'middleware' => 'api'], function () {
-    Route::post('login', [LoginController::class, 'login']);
-    Route::get('{provider}/callback', [LoginController::class, 'handleProviderCallback']);
-    Route::get('me', [LoginController::class, 'me'])->middleware('jwt.auth');
-    Route::post('refresh', [LoginController::class, 'refresh'])->middleware('jwt.auth');
-    Route::post('logout', [LoginController::class, 'logout'])->middleware('jwt.auth');
+    Route::post('login', 'Auth\LoginController@login');
+    Route::get('{provider}/callback', 'Auth\LoginController@handleProviderCallback');
+    Route::get('me', 'Auth\LoginController@me')->middleware('jwt.auth');
+    Route::post('refresh', 'Auth\LoginController@refresh')->middleware('jwt.auth');
+    Route::post('logout', 'Auth\LoginController@logout')->middleware('jwt.auth');
 
-    Route::post('register', [RegisterController::class, 'register']);
+    Route::post('register', 'Auth\RegisterController@register');
 
-    Route::post('email/resend', [VerificationController::class, 'resend']);
-    Route::get('email/verify', [VerificationController::class, 'notice']);
-    Route::get('email/verify/{id}/{hash}', [VerificationController::class, 'verify']);
+    Route::post('email/resend', 'Auth\VerificationController@resend');
+    Route::get('email/verify', 'Auth\VerificationController@notice');
+    Route::get('email/verify/{id}/{hash}', 'Auth\VerificationController@verify');
 
-    Route::post('password/confirm', [ConfirmPasswordController::class, 'confirm']);
-    Route::post('password/email', [ForgotPasswordController::class, 'sendResetLinkEmail']);
-    Route::post('password/reset', [ResetPasswordController::class, 'reset']);
+    Route::post('password/confirm', 'Auth\ConfirmPasswordController@confirm');
+    Route::post('password/email', 'Auth\ForgotPasswordController@sendResetLinkEmail');
+    Route::post('password/reset', 'Auth\ResetPasswordController@reset');
 });
 
-Route::group(['prefix' => 'v1', 'middleware' => ['jwt.auth']], function () {
-    Route::apiResource('users', UserController::class);
-    Route::put('users/{user}/approve', [UserController::class, 'approve']);
-    Route::put('users/{user}/block', [UserController::class, 'block']);
-    Route::put('users/{user}/role', [UserController::class, 'role']);
+Route::group(['prefix' => 'v1'], function () {
+    Route::apiResource('users', 'UserController');
+    Route::put('users/{user}/approve', 'UserController@approve');
+    Route::put('users/{user}/block', 'UserController@block');
+    Route::put('users/{user}/role', 'UserController@role');
 });

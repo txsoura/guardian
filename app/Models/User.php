@@ -14,7 +14,7 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
 
     protected $table = 'users';
     protected $primaryKey = 'id';
-    protected $incrementing = true;
+    public $incrementing = true;
 
     /**
      * The attributes that are mass assignable.

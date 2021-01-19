@@ -15,9 +15,16 @@ class UserController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
-        return UserResource::collection(User::all(), 200);
+        return UserResource::collection(
+            User::when($request['include'], function ($query, $include) {
+                return $query->with(explode(',',  $include));
+            })
+                ->orderBy('created_at', 'desc')
+                ->get(),
+            200
+        );
     }
 
     /**
@@ -47,9 +54,13 @@ class UserController extends Controller
      * @param  \App\Models\User  $user
      * @return \Illuminate\Http\Response
      */
-    public function show(User $user)
+    public function show(Request $request, User $user)
     {
-        return new UserResource($user, 200);
+        return new UserResource(User::find($user->id)
+            ->when($request['include'], function ($query, $include) {
+                return $query->with(explode(',',  $include));
+            })
+            ->firstOrFail(), 200);
     }
 
     /**

@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreatePersonalAccessTokensTable extends Migration
+class CreateAccessTokensTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,7 +13,7 @@ class CreatePersonalAccessTokensTable extends Migration
      */
     public function up()
     {
-        Schema::create('personal_access_tokens', function (Blueprint $table) {
+        Schema::create('access_tokens', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('name');
             $table->string('token', 64)->unique();
@@ -22,6 +22,7 @@ class CreatePersonalAccessTokensTable extends Migration
             $table->timestamp('expiration')->nullable();
             $table->foreignId('user_id')->nullable()->constrained('users');
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

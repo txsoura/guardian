@@ -12,13 +12,17 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
 {
     use Notifiable, SoftDeletes;
 
+    protected $table = 'users';
+    protected $primaryKey = 'id';
+    public $incrementing = true;
+
     /**
      * The attributes that are mass assignable.
      *
      * @var array
      */
     protected $fillable = [
-        'name', 'email', 'password', 'role'
+        'email', 'password', 'role_id'
     ];
 
     /**
@@ -57,8 +61,18 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
     public function getJWTCustomClaims()
     {
         return [
-            // "role" => $this->role->guard_name,
+            "role" => $this->role->name,
             "status" => $this->status
         ];
+    }
+
+    public function role()
+    {
+        return $this->hasOne(Role::class);
+    }
+
+    public function permissions()
+    {
+        return $this->hasMany(RolePermission::class, 'role_id', 'acl_role_id');
     }
 }

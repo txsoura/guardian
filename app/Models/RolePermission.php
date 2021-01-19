@@ -12,7 +12,7 @@ class RolePermission extends Model
 
     protected $table = 'acl_role_permissions';
     protected $primaryKey = 'role_id';
-    protected $incrementing = false;
+    public $incrementing = false;
 
     /**
      * The attributes that are mass assignable.

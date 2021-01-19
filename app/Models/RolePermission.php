@@ -10,7 +10,7 @@ class RolePermission extends Model
     use Notifiable;
 
     protected $table = 'acl_role_permissions';
-    protected $primaryKey = 'role_id';
+    protected $primaryKey = null;
     public $incrementing = false;
     public $timestamps = false;
 
@@ -22,4 +22,10 @@ class RolePermission extends Model
     protected $fillable = [
         'acl_role_id', 'acl_permission_id'
     ];
+
+
+    public function permissions()
+    {
+        return $this->hasOne( Permission::class,'acl_permission_id','id');
+    }
 }

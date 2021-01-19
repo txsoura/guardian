@@ -30,17 +30,6 @@ class LoginController extends Controller
     use ThrottlesLogins;
 
     /**
-     * Create a new controller instance.
-     *
-     * @return void
-     */
-    public function __construct()
-    {
-        $this->middleware('guest', ['except' => ['logout', 'me', 'refresh', 'respondWithToken']]);
-    }
-
-
-    /**
      * Handle a login request to the application.
      *
      * @param  \Illuminate\Http\Request  $request

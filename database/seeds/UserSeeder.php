@@ -18,32 +18,31 @@ class UserSeeder extends Seeder
      */
     public function run()
     {
-        $role = Role::create([
-            'name' => 'Admin',
-            'guard_name' => 'admin',
+        $role = Role::firstOrCreate([
+            'name' => 'admin',
+            'description' => 'Super admin',
         ]);
 
         User::create([
-            'name' => 'Admin',
             'email' => 'admin@admin.com',
             'email_verified_at' => now(),
             'password' => Hash::make('12345678'),
             'status' => UserStatus::APPROVED,
-            'role' => $role->id
+            'role_id' => $role->id
         ]);
 
         $permissions = collect($this->permissions());
 
         foreach ($permissions as $permission) {
-            Permission::create([
-                'name' => $permission->name,
-                'model' => $permission->model,
-                'description' => $permission->description,
+            Permission::firstOrCreate([
+                'name' => $permission['name'],
+                'model' => $permission['model'],
+                'description' => $permission['description'],
             ]);
 
-            RolePermission::create([
+            RolePermission::firstOrCreate([
                 'acl_role_id' => $role->id,
-                'acl_permission_id' => $permission->id,
+                'acl_permission_id' => $permission['id'],
             ]);
         }
     }

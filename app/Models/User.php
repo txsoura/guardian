@@ -68,11 +68,11 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
 
     public function role()
     {
-        return $this->hasOne(Role::class);
+        return $this->hasOne(Role::class, 'id', 'role_id');
     }
 
     public function permissions()
     {
-        return $this->hasMany(RolePermission::class, 'role_id', 'acl_role_id');
+        return $this->hasMany( RolePermission::class, 'acl_role_id', 'role_id');
     }
 }

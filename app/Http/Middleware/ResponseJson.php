@@ -21,14 +21,6 @@ class ResponseJson
 
         $response = $next($request);
 
-        if (!$response instanceof JsonResponse) {
-            $response = $this->factory->json(
-                $response->content(),
-                $response->status(),
-                $response->headers->all()
-            );
-        }
-
         return $response;
     }
 }

@@ -36,7 +36,6 @@ class UserSeeder extends Seeder
 
         foreach ($permissions as $permission) {
             Permission::create([
-                'id' => $permission->id,
                 'name' => $permission->name,
                 'model' => $permission->model,
                 'description' => $permission->description,

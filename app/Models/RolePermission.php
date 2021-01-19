@@ -3,16 +3,16 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Notifications\Notifiable;
 
 class RolePermission extends Model
 {
-    use Notifiable, SoftDeletes;
+    use Notifiable;
 
     protected $table = 'acl_role_permissions';
     protected $primaryKey = 'role_id';
     public $incrementing = false;
+    public $timestamps = false;
 
     /**
      * The attributes that are mass assignable.

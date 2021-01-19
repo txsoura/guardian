@@ -6,7 +6,6 @@ use App\Models\Role;
 use App\Models\Permission;
 use App\Models\RolePermission;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 class UserSeeder extends Seeder
@@ -24,6 +23,7 @@ class UserSeeder extends Seeder
         ]);
 
         User::create([
+            'name' => 'Guardian Admin User',
             'email' => 'admin@admin.com',
             'email_verified_at' => now(),
             'password' => Hash::make('12345678'),
@@ -121,9 +121,9 @@ class UserSeeder extends Seeder
             ],
             [
                 'id' => 12,
-                'name' => 'role_permissions.show',
+                'name' => 'role_permissions.index',
                 'model' => 'rolePermission',
-                'description' => 'Show role permissions by role id'
+                'description' => 'Show all role permissions by role id'
             ],
             [
                 'id' => 13,

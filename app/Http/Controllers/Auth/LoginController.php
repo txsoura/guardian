@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Auth;
 use App\Models\User;
 use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\UserResource;
+use App\Models\AccessToken;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
@@ -234,9 +236,17 @@ class LoginController extends Controller
      *
      * @return \Illuminate\Http\JsonResponse
      */
-    public function me()
+    public function me(Request $request)
     {
-        return response()->json([auth()->user()]);
+        if (auth()->user()) {
+            return new UserResource(auth()->user(), 200);
+        } else {
+            $token = $request->header('Authorization');
+
+            $accessToken = AccessToken::where('token', $token)->first();
+            $user = User::find($accessToken->user_id);
+            return new UserResource($user, 200);
+        }
     }
 
     /**

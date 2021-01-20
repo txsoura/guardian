@@ -7,6 +7,7 @@ use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class UserController extends Controller
 {
@@ -35,12 +36,16 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
+        $request['email'] = Str::lower($request['email']);
+
         $request->validate([
+            'name' => 'required|string',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
-            'role' => 'required|numeric|exists:roles,id'
+            'role' => 'required|numeric|exists:acl_roles,id'
         ]);
 
+        $request['name'] = ucwords($request['name']);
         $request['password'] = Hash::make($request['password']);
         $request['status'] = UserStatus::APPROVED;
         $user = User::create($request->all());
@@ -73,9 +78,11 @@ class UserController extends Controller
     public function update(Request $request, User $user)
     {
         $request->validate([
+            'name' => 'string',
             'password' => 'string|min:8|confirmed',
         ]);
 
+        $request['name'] = ucwords($request['name']);
         $request['password'] = Hash::make($request['password']);
         $user->update($request->all());
 

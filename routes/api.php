@@ -57,8 +57,9 @@ Route::group(['prefix' => 'v1', 'middleware' => 'jwt.auth'], function () {
     Route::group(['prefix' => 'acl'], function () {
         Route::apiResource('roles', 'RoleController');
         Route::apiResource('permissions', 'PermissionController');
-        Route::apiResource('roles/{role}/permissions', 'RolePermissionController');
-        Route::delete('roles/{role}/permissions/{permission}', 'RolePermissionController@destroy')->name('role_permissions.destroy');
+        Route::get('roles/{role}/permissions', 'RolePermissionController@index')->name('roles.permissions.index');
+        Route::post('roles/{role}/permissions', 'RolePermissionController@store')->name('roles.permissions.store');
+        Route::delete('roles/{role}/permissions/{permission}', 'RolePermissionController@destroy')->name('roles.permissions.destroy');
     });
 
     // User

@@ -26,6 +26,6 @@ class RolePermission extends Model
 
     public function permissions()
     {
-        return $this->hasOne( Permission::class,'acl_permission_id','id');
+        return $this->belongsTo( Permission::class,'acl_permission_id','id');
     }
 }

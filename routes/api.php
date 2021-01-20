@@ -66,4 +66,7 @@ Route::group(['prefix' => 'v1', 'middleware' => 'jwt.auth'], function () {
     Route::apiResource('users', 'UserController');
     Route::put('users/{user}/approve', 'UserController@approve')->name('users.approve');
     Route::put('users/{user}/block', 'UserController@block')->name('users.block');
+
+    // Access token
+    Route::apiResource('users/{user}/tokens', 'AccessTokenController');
 });

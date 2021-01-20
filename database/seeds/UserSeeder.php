@@ -23,7 +23,7 @@ class UserSeeder extends Seeder
         ]);
 
         User::create([
-            'name' => 'Guardian Admin User',
+            'name' => 'TxsSec Guardian Admin User',
             'email' => 'admin@admin.com',
             'email_verified_at' => now(),
             'password' => Hash::make('12345678'),
@@ -115,15 +115,15 @@ class UserSeeder extends Seeder
             //Role permmissions
             [
                 'id' => 11,
-                'name' => 'role_permissions.store',
-                'model' => 'rolePermission',
-                'description' => 'Create role permission'
-            ],
-            [
-                'id' => 12,
                 'name' => 'role_permissions.index',
                 'model' => 'rolePermission',
                 'description' => 'Show all role permissions by role id'
+            ],
+            [
+                'id' => 12,
+                'name' => 'role_permissions.store',
+                'model' => 'rolePermission',
+                'description' => 'Create role permission'
             ],
             [
                 'id' => 13,

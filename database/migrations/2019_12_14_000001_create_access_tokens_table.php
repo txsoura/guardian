@@ -17,7 +17,7 @@ class CreateAccessTokensTable extends Migration
             $table->bigIncrements('id');
             $table->string('name');
             $table->string('token', 64)->unique();
-            $table->text('abilities')->nullable();
+            $table->text('abilities');
             $table->timestamp('last_used_at')->nullable();
             $table->timestamp('expiration')->nullable();
             $table->foreignId('user_id')->nullable()->constrained('users');

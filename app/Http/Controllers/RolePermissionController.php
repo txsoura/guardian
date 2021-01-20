@@ -31,12 +31,12 @@ class RolePermissionController extends Controller
      */
     public function store(Request $request, Role $role)
     {
-        $request['acl_role_id'] = $role->id;
 
         $request->validate([
-            'acl_role_id' => 'required|numeric||exists:acl_roles,id',
             'acl_permission_id' => 'required|numeric|exists:acl_permissions,id'
         ]);
+
+        $request['acl_role_id'] = $role->id;
 
         $rolePermission = RolePermission::create($request->all());
 

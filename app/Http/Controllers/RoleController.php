@@ -14,13 +14,10 @@ class RoleController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index(Request $request)
+    public function index()
     {
         return RoleResource::collection(
-            Role::when($request['include'], function ($query, $include) {
-                return $query->with(explode(',',  $include));
-            })
-                ->orderBy('created_at', 'desc')
+            Role::orderBy('created_at', 'desc')
                 ->get(),
             200
         );
@@ -53,14 +50,10 @@ class RoleController extends Controller
      * @param  Role $role
      * @return \Illuminate\Http\Response
      */
-    public function show(Request $request, Role $role)
+    public function show(Role $role)
     {
         return new RoleResource(
-            Role::find($role->id)
-                ->when($request['include'], function ($query, $include) {
-                    return $query->with(explode(',',  $include));
-                })
-                ->firstOrFail(),
+            $role,
             200
         );
     }

@@ -55,6 +55,12 @@ class Kernel extends HttpKernel
             // \App\Http\Middleware\AccessTokenACL::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ],
+
+        'integrate' => [
+            \App\Http\Middleware\ResponseJson::class,
+            \App\Http\Middleware\CheckLocale::class,
+            \App\Http\Middleware\IntegrateAuth::class,
+        ]
     ];
 
     /**

@@ -22,7 +22,7 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
      * @var array
      */
     protected $fillable = [
-        'email', 'password', 'role_id'
+        'name', 'email', 'password', 'role_id'
     ];
 
     /**
@@ -73,6 +73,6 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
 
     public function permissions()
     {
-        return $this->hasMany( RolePermission::class, 'acl_role_id', 'role_id');
+        return $this->hasMany(RolePermission::class, 'acl_role_id', 'role_id');
     }
 }

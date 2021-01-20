@@ -40,6 +40,8 @@ class RouteServiceProvider extends ServiceProvider
         $this->mapWebRoutes();
 
         $this->mapAccessTokenRoutes();
+
+        $this->mapIntegrateRoutes();
     }
 
     /**
@@ -84,5 +86,20 @@ class RouteServiceProvider extends ServiceProvider
             ->middleware('accessToken')
             ->namespace($this->namespace)
             ->group(base_path('routes/accessToken.php'));
+    }
+
+    /**
+     * Define the "integrate" routes for the application.
+     *
+     * These routes are typically stateless.
+     *
+     * @return void
+     */
+    protected function mapIntegrateRoutes()
+    {
+        Route::prefix('integrate')
+            ->middleware('integrate')
+            ->namespace($this->namespace)
+            ->group(base_path('routes/integrate.php'));
     }
 }

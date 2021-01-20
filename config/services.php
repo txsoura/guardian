@@ -42,4 +42,8 @@ return [
         'redirect'      => env('TWITTER_REDIRECT')
     ],
 
+    //App integrate
+    // 'app prefix' => [
+    //     'key'     => env('APP_PREFIX_KEY')
+    // ],
 ];

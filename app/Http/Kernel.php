@@ -43,6 +43,7 @@ class Kernel extends HttpKernel
             'throttle:60,1',
             \App\Http\Middleware\ResponseJson::class,
             \App\Http\Middleware\CheckLocale::class,
+            \App\Http\Middleware\AuthACL::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ],
     ];

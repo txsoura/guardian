@@ -115,19 +115,19 @@ class UserSeeder extends Seeder
             //Role permmissions
             [
                 'id' => 11,
-                'name' => 'role_permissions.index',
+                'name' => 'roles.permissions.index',
                 'model' => 'rolePermission',
                 'description' => 'Show all role permissions by role id'
             ],
             [
                 'id' => 12,
-                'name' => 'role_permissions.store',
+                'name' => 'roles.permissions.store',
                 'model' => 'rolePermission',
                 'description' => 'Create role permission'
             ],
             [
                 'id' => 13,
-                'name' => 'role_permissions.destroy',
+                'name' => 'roles.permissions.destroy',
                 'model' => 'rolePermission',
                 'description' => 'Delete role permission'
             ],

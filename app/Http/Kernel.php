@@ -46,6 +46,15 @@ class Kernel extends HttpKernel
             \App\Http\Middleware\AuthACL::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ],
+
+        'accessToken' => [
+            'throttle:60,1',
+            \App\Http\Middleware\ResponseJson::class,
+            \App\Http\Middleware\CheckLocale::class,
+            \App\Http\Middleware\AccessTokenAuth::class,
+            // \App\Http\Middleware\AccessTokenACL::class,
+            \Illuminate\Routing\Middleware\SubstituteBindings::class,
+        ],
     ];
 
     /**

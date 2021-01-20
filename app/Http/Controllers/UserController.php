@@ -80,6 +80,7 @@ class UserController extends Controller
         $request->validate([
             'name' => 'string',
             'password' => 'string|min:8|confirmed',
+            'role_id' => 'numeric|exists:acl_roles,id',
         ]);
 
         $request['name'] = ucwords($request['name']);
@@ -126,25 +127,6 @@ class UserController extends Controller
     public function block(User $user)
     {
         $user->status = UserStatus::BLOCKED;
-        $user->update();
-
-        return new UserResource($user, 202);
-    }
-
-    /**
-     * Update the role.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\User  $user
-     * @return \Illuminate\Http\Response
-     */
-    public function role(Request $request, User $user)
-    {
-        $request->validate([
-            'role' => 'required|numeric|exists:roles,id',
-        ]);
-
-        $user->role = $request['role'];
         $user->update();
 
         return new UserResource($user, 202);

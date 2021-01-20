@@ -7,6 +7,7 @@ use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class UserController extends Controller
 {
@@ -15,9 +16,16 @@ class UserController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
-        return UserResource::collection(User::all(), 200);
+        return UserResource::collection(
+            User::when($request['include'], function ($query, $include) {
+                return $query->with(explode(',',  $include));
+            })
+                ->orderBy('created_at', 'desc')
+                ->get(),
+            200
+        );
     }
 
     /**
@@ -28,12 +36,16 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
+        $request['email'] = Str::lower($request['email']);
+
         $request->validate([
+            'name' => 'required|string',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
-            'role' => 'required|numeric|exists:roles,id'
+            'role' => 'required|numeric|exists:acl_roles,id'
         ]);
 
+        $request['name'] = ucwords($request['name']);
         $request['password'] = Hash::make($request['password']);
         $request['status'] = UserStatus::APPROVED;
         $user = User::create($request->all());
@@ -47,9 +59,13 @@ class UserController extends Controller
      * @param  \App\Models\User  $user
      * @return \Illuminate\Http\Response
      */
-    public function show(User $user)
+    public function show(Request $request, User $user)
     {
-        return new UserResource($user, 200);
+        return new UserResource(User::find($user->id)
+            ->when($request['include'], function ($query, $include) {
+                return $query->with(explode(',',  $include));
+            })
+            ->firstOrFail(), 200);
     }
 
     /**
@@ -62,9 +78,11 @@ class UserController extends Controller
     public function update(Request $request, User $user)
     {
         $request->validate([
+            'name' => 'string',
             'password' => 'string|min:8|confirmed',
         ]);
 
+        $request['name'] = ucwords($request['name']);
         $request['password'] = Hash::make($request['password']);
         $user->update($request->all());
 

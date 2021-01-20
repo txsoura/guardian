@@ -14,9 +14,6 @@ class RolePermissionResource extends JsonResource
      */
     public function toArray($request)
     {
-        return [
-            'acl_role_id' => $this->acl_role_id,
-            'acl_permission_id' => $this->acl_permission_id,
-        ];
+        return $this->permissions;
     }
 }

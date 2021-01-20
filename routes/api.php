@@ -52,7 +52,16 @@ Route::group(['prefix' => 'v1/auth', 'middleware' => 'api'], function () {
     Route::post('password/reset', 'Auth\ResetPasswordController@reset');
 });
 
-Route::group(['prefix' => 'v1'], function () {
+Route::group(['prefix' => 'v1', 'middleware' => 'api'], function () {
+    // ACL
+    Route::group(['prefix' => 'acl'], function () {
+        Route::apiResource('roles', 'RoleController');
+        Route::apiResource('permissions', 'PermissionController');
+        Route::apiResource('roles/{role}/permissions', 'RolePermissionController');
+        Route::delete('roles/{role}/permissions/{permission}', 'RolePermissionController@destroy');
+    });
+
+    // User
     Route::apiResource('users', 'UserController');
     Route::put('users/{user}/approve', 'UserController@approve');
     Route::put('users/{user}/block', 'UserController@block');

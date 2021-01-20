@@ -22,9 +22,4 @@ class Role extends Model
     protected $fillable = [
         'name', 'description'
     ];
-
-    public function permissions()
-    {
-        return $this->hasMany(RolePermission::class, 'id', 'acl_role_id');
-    }
 }

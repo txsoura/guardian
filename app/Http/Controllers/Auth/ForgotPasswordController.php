@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Str;
 
 class ForgotPasswordController extends Controller
 {
@@ -52,6 +53,7 @@ class ForgotPasswordController extends Controller
      */
     protected function validateEmail(Request $request)
     {
+        $request['email'] = Str::lower($request['email']);
         $request->validate(['email' => 'required|email']);
     }
 

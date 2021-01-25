@@ -250,6 +250,16 @@ class LoginController extends Controller
     }
 
     /**
+     * Get the authenticated User permissions.
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function permissions(Request $request)
+    {
+        return new UserResource(User::find(auth()->user()->id)->with('permissions')->first(), 200);
+    }
+
+    /**
      * Refresh a token.
      *
      * @return \Illuminate\Http\JsonResponse

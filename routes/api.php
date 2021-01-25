@@ -31,6 +31,7 @@ Route::group(['prefix' => 'v1/auth', 'middleware' => 'api'], function () {
     Route::post('login', 'Auth\LoginController@login');
     Route::get('{provider}/callback', 'Auth\LoginController@handleProviderCallback');
     Route::get('me', 'Auth\LoginController@me')->middleware('jwt.auth');
+    Route::get('me/permissions', 'Auth\LoginController@permissions')->middleware('jwt.auth');
     Route::post('refresh', 'Auth\LoginController@refresh')->middleware('jwt.auth');
     Route::post('logout', 'Auth\LoginController@logout')->middleware('jwt.auth');
 

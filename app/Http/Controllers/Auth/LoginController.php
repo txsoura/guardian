@@ -218,7 +218,7 @@ class LoginController extends Controller
      */
     protected function loggedOut()
     {
-        return response()->json(['message' => trans('auth.logged_out')], 201);
+        return response()->json(['message' => trans('auth.user_logged_out')], 201);
     }
 
     /**
@@ -254,7 +254,7 @@ class LoginController extends Controller
      *
      * @return \Illuminate\Http\JsonResponse
      */
-    public function permissions(Request $request)
+    public function permissions()
     {
         return new UserResource(User::find(auth()->user()->id)->with('permissions')->first(), 200);
     }
@@ -279,7 +279,7 @@ class LoginController extends Controller
     private function respondWithToken($token)
     {
         return response()->json([
-            'message' =>  trans('auth.logged_in'),
+            'message' =>  trans('auth.user_logged_in'),
             'access_token' => $token,
             'token_type' => 'bearer',
             'expires_in' => auth()->factory()->getTTL() * 60
@@ -310,7 +310,7 @@ class LoginController extends Controller
 
             return response()->json([
                 'message' => trans('message.no_access'),
-                'error' => trans('auth.pendent_or_blocked')
+                'error' => trans('auth.user_pendent_or_blocked')
             ], 422);
         }
 

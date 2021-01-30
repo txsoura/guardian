@@ -117,7 +117,7 @@ class Handler extends ExceptionHandler
         ) {
             return response()->json([
                 'message' => trans('auth.unauthenticated'),
-                'error' => trans('auth.already_logged_out')
+                'error' => trans('auth.user_already_logged_out')
             ], 422);
         }
 
@@ -125,15 +125,9 @@ class Handler extends ExceptionHandler
             UnauthorizedHttpException
         ) {
             return response()->json([
-                'message' => trans('auth.not_found'),
+                'message' => trans('message.not_found'),
                 'error' => trans('auth.user_not_found')
             ], 404);
-        }
-        if ($exception->getMessage() === 'Pendent or blocked user cannot login') {
-            return response()->json([
-                'message' => trans('message.no_access'),
-                'error' => trans('auth.pendent_or_blocked')
-            ], 403);
         }
 
         return parent::render($request, $exception);

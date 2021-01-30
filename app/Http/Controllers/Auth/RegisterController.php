@@ -97,6 +97,6 @@ class RegisterController extends Controller
      */
     protected function registered($user)
     {
-        return response()->json(['message' =>  trans('auth.registered'), 'user' => ['id' => $user->id, 'role' => $user->role]], 201);
+        return response()->json(['message' =>  trans('auth.user_registered')], 201);
     }
 }

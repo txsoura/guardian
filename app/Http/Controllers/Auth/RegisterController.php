@@ -11,6 +11,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Auth\Events\Registered;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Validator;
 
 class RegisterController extends Controller
@@ -35,7 +36,8 @@ class RegisterController extends Controller
     protected function validator(array $data)
     {
         return Validator::make($data, [
-            'role' => ['required', 'numeric', 'exists:roles,id'],
+            'role_id' => ['nullable', 'numeric', 'exists:acl_roles,id'],
+            'name' => ['required', 'string',  'min:3'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ]);
@@ -50,8 +52,9 @@ class RegisterController extends Controller
     protected function create(array $data)
     {
         return User::create([
-            'role' => $data['role'],
+            'role_id' => Arr::exists($data,'role_id') ? $data['role_id'] : config('auth.default_role'),
             'status' => UserStatus::PENDENT,
+            'name' => ucwords($data['name']),
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
         ]);

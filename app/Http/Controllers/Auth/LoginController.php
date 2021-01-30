@@ -143,9 +143,12 @@ class LoginController extends Controller
             return $this->respondWithToken($token);
         }
 
-        if (auth()->attempt($this->credentials($request, $request['status'] = 'pendent'))) {
-
-            return $this->noAccess('pendent');
+        if ($token = auth()->attempt($this->credentials($request, $request['status'] = 'pendent'))) {
+            if (config('auth.pendent_user')) {
+                return $this->respondWithToken($token);
+            } else {
+                return $this->noAccess('pendent');
+            }
         }
 
         if (auth()->attempt($this->credentials($request, $request['status'] = 'blocked'))) {
@@ -294,11 +297,12 @@ class LoginController extends Controller
     public function handleProviderCallback($provider)
     {
         $user = Socialite::driver($provider)->user();
+        $email = Str::lower($user->email);
 
-        $validUser = User::where('email', $user->email)->first();
+        $validUser = User::where('email', $email)->first();
         if (!$validUser) {
             $validUser = User::create([
-                'email' => $user->email,
+                'email' => $email,
                 'email_verified_at' => now(),
                 'password' => Hash::make(Str::random(18)),
                 'role' => 1,
@@ -306,12 +310,22 @@ class LoginController extends Controller
             ]);
         }
 
-        if ($validUser->status != UserStatus::APPROVED) {
+        if (config('auth.pendent_user')) {
+            if ($validUser->status == UserStatus::BLOCKED) {
 
-            return response()->json([
-                'message' => trans('message.no_access'),
-                'error' => trans('auth.user_pendent_or_blocked')
-            ], 422);
+                return response()->json([
+                    'message' => trans('message.no_access'),
+                    'error' => trans('auth.user_blocked')
+                ], 422);
+            }
+        } else {
+            if ($validUser->status != UserStatus::APPROVED) {
+
+                return response()->json([
+                    'message' => trans('message.no_access'),
+                    'error' => trans('auth.user_pendent_or_blocked')
+                ], 422);
+            }
         }
 
         if ($token = auth()->login($validUser, true)) {

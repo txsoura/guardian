@@ -302,10 +302,11 @@ class LoginController extends Controller
         $validUser = User::where('email', $email)->first();
         if (!$validUser) {
             $validUser = User::create([
+                'name'=>ucwords($user->name),
                 'email' => $email,
                 'email_verified_at' => now(),
                 'password' => Hash::make(Str::random(18)),
-                'role' => 1,
+                'role_id' => config('auth.default_role'),
                 'status' => UserStatus::APPROVED
             ]);
         }

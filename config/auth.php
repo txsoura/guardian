@@ -15,6 +15,19 @@ return [
 
     'pendent_user' => (bool) env('AUTH_PENDENT_USER', false),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Default User Role
+    |--------------------------------------------------------------------------
+    |
+    | This value is used on public user register (email or social networks)
+    | routes, to set the default application user role. This value must be
+    | the id (numeric) of the correspondent role, and by default is role
+    | id 1 => admin
+    |
+    */
+
+    'default_role' => (int) env('AUTH_DEFAULT_ROLE', 1),
 
     /*
     |--------------------------------------------------------------------------

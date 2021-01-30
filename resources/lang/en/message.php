@@ -10,5 +10,4 @@ return [
     'no_permission' => 'You are not allowed to perform this operation',
     'no_access' => 'You have no access to the system, please contact the support.',
     'role_not_found' => 'Role not found',
-    'permission_not_found' => 'Permission not found',
 ];

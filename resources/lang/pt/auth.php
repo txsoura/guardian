@@ -24,7 +24,7 @@ return [
     'user_pendent_or_blocked' => 'Seu usuário está pendente ou bloqueado',
     'user_not_found' => 'Usuário não encontrado',
     'unauthenticated' => 'Não autenticado',
-    'permission_denied' => 'Permission denied',
+    'permission_denied' => 'Permissão negada',
     'token_expired' => 'Token expirado',
     'token_invalid' => 'Token inválido',
     'token_blacklisted' => 'Token na lista negra',

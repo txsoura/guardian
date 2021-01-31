@@ -22,7 +22,7 @@ return [
     'user_blocked' => 'Usuario bloqueado',
     'user_pendent' => 'Usuario pendiente',
     'user_pendent_or_blocked' => 'Tu usuario es pendiente o bloqueado',
-    'user_not_found' => 'User not found',
+    'user_not_found' => 'Usuario no encontrado',
     'unauthenticated' => 'Sin autenticar',
     'permission_denied' => 'Permiso denegado',
     'token_expired' => 'Token caducado',

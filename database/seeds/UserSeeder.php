@@ -13,7 +13,7 @@ class UserSeeder extends Seeder
     /**
      * Run the database seeds.
      *
-     * @return void
+     * @return voidssssssssss
      */
     public function run()
     {
@@ -23,7 +23,7 @@ class UserSeeder extends Seeder
         ]);
 
         User::create([
-            'name' => 'Txsoura Guardian Admin User',
+            'name' => 'Ideia Guardian Admin User',
             'email' => 'admin@admin.com',
             'email_verified_at' => now(),
             'password' => Hash::make('12345678'),

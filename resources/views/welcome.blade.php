@@ -4,7 +4,7 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        <title>Txsoura</title>
+        <title>Ideia</title>
 
         <!-- Fonts -->
         <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@200;600&display=swap" rel="stylesheet">
@@ -67,11 +67,11 @@
         <div class="flex-center position-ref full-height">
             <div class="content">
                 <div class="title m-b-md">
-                    Txsoura - Guardian API
+                    Ideia - Guardian API
                 </div>
 
                 <div class="links">
-                    <a href="https://github.com/txsoura/guardian">GitHub</a>
+                    <a href="https://github.com/txsoura/guardian/tree/ideia">GitHub</a>
                 </div>
             </div>
         </div>

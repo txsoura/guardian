@@ -26,6 +26,8 @@ class UserSeeder extends Seeder
             'name' => 'Txsoura Guardian Admin User',
             'email' => 'admin@admin.com',
             'email_verified_at' => now(),
+            'cellphone' => '12345678',
+            'cellphone_verified_at' => now(),
             'password' => Hash::make('12345678'),
             'status' => UserStatus::APPROVED,
             'role_id' => $role->id

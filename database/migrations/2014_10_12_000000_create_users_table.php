@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\Sex;
 use App\Enums\TwoFactorProvider;
 use App\Enums\UserStatus;
 use Illuminate\Database\Migrations\Migration;

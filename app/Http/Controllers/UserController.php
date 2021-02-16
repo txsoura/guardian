@@ -41,6 +41,7 @@ class UserController extends Controller
         $request->validate([
             'name' => 'required|string',
             'email' => 'required|string|email|max:255|unique:users',
+            'cellphone' => 'nullable|numeric|unique:users',
             'password' => 'required|string|min:8|confirmed',
             'role' => 'required|numeric|exists:acl_roles,id'
         ]);
@@ -79,6 +80,7 @@ class UserController extends Controller
     {
         $request->validate([
             'name' => 'string',
+            'cellphone' => 'nullable|numeric|unique:users',
             'password' => 'string|min:8|confirmed',
             'role_id' => 'numeric|exists:acl_roles,id',
         ]);

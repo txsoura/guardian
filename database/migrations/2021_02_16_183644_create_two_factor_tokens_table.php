@@ -20,7 +20,7 @@ class CreateTwoFactorTokensTable extends Migration
             $table->string('code');
             $table->timestamp('expiration');
             $table->boolean('used')->default(false);
-            $table->foreignId('user_id')->references('id')->on('users');
+            $table->foreignId('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->timestamps();
         });
     }

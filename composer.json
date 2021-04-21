@@ -43,6 +43,11 @@
         },
         "classmap": [
             "database/seeds"
+        ],
+        "files": [
+            "app/Http/Helpers/TwilioHelper.php",
+            "app/Http/Helpers/TwoFactorHelper.php",
+            "app/Http/Helpers/TwoFactorRecoveryHelper.php"
         ]
     },
     "autoload-dev": {

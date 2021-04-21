@@ -17,6 +17,17 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::group(['prefix' => 'auth'], function () {
+//Social login
+Route::group(['prefix' => 'api/v1/auth'], function () {
     Route::get('{provider}', 'Auth\LoginController@redirectToProvider');
+    Route::get('{provider}/callback', 'Auth\LoginController@handleProviderCallback');
 });
+
+// Route created only to dismiss "Route [password.reset] not defined" error
+Route::get('password/reset', function () {
+    return [
+        'name' => config('app.name'),
+        'version' => config('app.version'),
+        'locale' => app()->getLocale(),
+    ];
+})->name('password.reset');

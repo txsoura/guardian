@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::group(['prefix' => '{app}/{token}'], function () {
+Route::group(['prefix' => '{app}/{key}'], function () {
     # Version
     Route::get('/', function () {
         return [
@@ -21,10 +21,6 @@ Route::group(['prefix' => '{app}/{token}'], function () {
             'version' => config('app.version'),
             'locale' => app()->getLocale(),
         ];
-    });
-
-    Route::fallback(function () {
-        return response()->json(['message' => trans('message.not_found'), 'error' => trans('message.route_not_found')], 404);
     });
 
     // ACL
@@ -40,7 +36,4 @@ Route::group(['prefix' => '{app}/{token}'], function () {
     Route::apiResource('users', 'UserController');
     Route::put('users/{user}/approve', 'UserController@approve');
     Route::put('users/{user}/block', 'UserController@block');
-
-    // Access token
-    Route::apiResource('users/{user}/tokens', 'AccessTokenController');
 });

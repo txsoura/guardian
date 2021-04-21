@@ -16,7 +16,7 @@ class CreateGuardianAclTables extends Migration
 
         Schema::create('acl_permissions', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->string('name')->unique();
+            $table->string('name');
             $table->string('model');
             $table->string('description');
             $table->timestamps();
@@ -25,7 +25,7 @@ class CreateGuardianAclTables extends Migration
 
         Schema::create('acl_roles', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->string('name')->unique();
+            $table->string('name');
             $table->string('description');
             $table->timestamps();
             $table->softDeletes();

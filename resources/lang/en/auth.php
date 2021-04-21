@@ -25,6 +25,7 @@ return [
     'user_not_found' => 'User not found',
     'unauthenticated' => 'Unauthenticated',
     'permission_denied' => 'Permission denied',
+    'access_denied' => 'Access denied',
     'token_expired' => 'Token expired',
     'token_invalid' => 'Token invalid',
     'token_blacklisted' => 'Token blacklisted',

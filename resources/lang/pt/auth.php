@@ -25,6 +25,7 @@ return [
     'user_not_found' => 'Usuário não encontrado',
     'unauthenticated' => 'Não autenticado',
     'permission_denied' => 'Permissão negada',
+    'access_denied' => 'Acesso negada',
     'token_expired' => 'Token expirado',
     'token_invalid' => 'Token inválido',
     'token_blacklisted' => 'Token na lista negra',

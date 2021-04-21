@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Notifications\ResetPassword;
+use App\Notifications\VerifyEmail;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -22,7 +24,7 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
      * @var array
      */
     protected $fillable = [
-        'name', 'email', 'cellphone', 'password', 'role_id'
+        'name', 'email', 'cellphone', 'password', 'role_id', 'cellphone_verified_at', 'status', 'avatar'
     ];
 
     /**
@@ -40,9 +42,46 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
      * @var array
      */
     protected $casts = [
+        'avatar' => 'url',
         'email_verified_at' => 'datetime',
         'cellphone_verified_at' => 'datetime',
     ];
+
+     /**
+     * Send the password reset notification.
+     *
+     * @return void
+     */
+    public function sendEmailVerificationNotification()
+    {
+        $this->notify(new VerifyEmail);
+    }
+
+    /**
+     * Send the password reset notification.
+     *
+     * @param  string  $token
+     * @return void
+     */
+    public function sendPasswordResetNotification($token)
+    {
+        $this->notify(new ResetPassword($token));
+    }
+
+    /**
+     * Check if cellphone is verified.
+     *
+     * @return bool
+     */
+    public function hasVerifiedCellphone()
+    {
+        if ($this->cellphone_verified_at) {
+            return true;
+        };
+
+        return false;
+    }
+
 
     /**
      * Get the identifier that will be stored in the subject claim of the JWT.
@@ -62,7 +101,7 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
     public function getJWTCustomClaims()
     {
         return [
-            "role" => $this->role->name,
+            "role" => $this->role?$this->role->name:null,
             "status" => $this->status
         ];
     }

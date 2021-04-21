@@ -2,10 +2,13 @@
 
 namespace App\Providers;
 
+use App\Events\TwoFactorVerify;
+use App\Events\UserCreated;
+use App\Listeners\SendTwoFactorEmailCodeNotification;
+use App\Listeners\SendUserPassword;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
-use Illuminate\Support\Facades\Event;
 
 class EventServiceProvider extends ServiceProvider
 {
@@ -18,6 +21,12 @@ class EventServiceProvider extends ServiceProvider
         Registered::class => [
             SendEmailVerificationNotification::class,
         ],
+        TwoFactorVerify::class => [
+            SendTwoFactorEmailCodeNotification::class
+        ],
+        UserCreated::class => [
+            SendUserPassword::class
+        ]
     ];
 
     /**

@@ -5,13 +5,14 @@ namespace App\Http\Controllers\Auth;
 use App\Models\User;
 use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
-use App\Http\Resources\UserResource;
-use App\Models\AccessToken;
+use App\Http\Helpers\TwoFactorHelper;
+use App\Http\Helpers\TwoFactorRecoveryHelper;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Foundation\Auth\ThrottlesLogins;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
@@ -56,6 +57,11 @@ class LoginController extends Controller
         }
 
         if ($this->attemptLogin($request)) {
+
+            if ($checker = $this->userCheck($request)) {
+                return $checker;
+            }
+
             return $this->sendLoginResponse($request);
         }
 
@@ -92,7 +98,6 @@ class LoginController extends Controller
      */
     protected function attemptLogin(Request $request)
     {
-
         return $this->guard()->attempt(
             $this->credentials($request),
             $request->filled('remember')
@@ -124,9 +129,7 @@ class LoginController extends Controller
             return $response;
         }
 
-        if ($request->wantsJson()) {
-            return new Response('', 204);
-        }
+        return new Response('', 204);
     }
 
     /**
@@ -138,24 +141,32 @@ class LoginController extends Controller
      */
     protected function authenticated(Request $request)
     {
-        if ($token = auth()->attempt($this->credentials($request, $request['status'] = 'approved'))) {
+        return $this->respondWithToken(auth()->attempt($this->credentials($request)));
+    }
 
-            return $this->respondWithToken($token);
-        }
+    /**
+     * Check extra user data before authentication, such as status and two-factor enabled.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  mixed  $user
+     */
+    protected function userCheck(Request $request)
+    {
+        $user = User::where('email', $request['email'])->first();
 
-        if ($token = auth()->attempt($this->credentials($request, $request['status'] = 'pendent'))) {
-            if (config('auth.pendent_user')) {
-                return $this->respondWithToken($token);
-            } else {
-                return $this->noAccess('pendent');
-            }
-        }
-
-        if (auth()->attempt($this->credentials($request, $request['status'] = 'blocked'))) {
-
+        if ($user->status == UserStatus::BLOCKED) {
             return $this->noAccess('blocked');
         }
+
+        if (!config('auth.pendent_user') && $user->status == UserStatus::PENDENT) {
+            return $this->noAccess('pendent');
+        }
+
+        if (($user->status == UserStatus::APPROVED || (config('auth.pendent_user') && $user->status == UserStatus::PENDENT)) && $user->two_factor_provider != null) {
+            return TwoFactorHelper::send($user->id);
+        }
     }
+
 
     /**
      * The user has no access to the application.
@@ -203,7 +214,7 @@ class LoginController extends Controller
      */
     public function logout(Request $request)
     {
-        $this->guard()->logout();
+        $this->guard()->logout(true);
 
         if ($response = $this->loggedOut($request)) {
             return $response;
@@ -221,7 +232,7 @@ class LoginController extends Controller
      */
     protected function loggedOut()
     {
-        return response()->json(['message' => trans('auth.user_logged_out')], 201);
+        return response()->json(['message' => trans('auth.user_logged_out')], 200);
     }
 
     /**
@@ -235,41 +246,13 @@ class LoginController extends Controller
     }
 
     /**
-     * Get the authenticated User.
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function me(Request $request)
-    {
-        if (auth()->user()) {
-            return new UserResource(auth()->user(), 200);
-        } else {
-            $token = $request->header('Authorization');
-
-            $accessToken = AccessToken::where('token', $token)->first();
-            $user = User::find($accessToken->user_id);
-            return new UserResource($user, 200);
-        }
-    }
-
-    /**
-     * Get the authenticated User permissions.
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function permissions()
-    {
-        return new UserResource(User::find(auth()->user()->id)->with('permissions')->first(), 200);
-    }
-
-    /**
      * Refresh a token.
      *
      * @return \Illuminate\Http\JsonResponse
      */
     public function refresh()
     {
-        return $this->respondWithToken(auth()->refresh());
+        return $this->respondWithToken(auth()->refresh(true,true));
     }
 
     /**
@@ -294,39 +277,107 @@ class LoginController extends Controller
         return Socialite::driver($provider)->redirect();
     }
 
-    public function handleProviderCallback($provider)
+    /**
+     * Resend login two factor code.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
+     *
+     */
+    public function resend(Request $request)
     {
-        $user = Socialite::driver($provider)->user();
+        $request->validate([
+            'email' => 'required|string|email',
+        ]);
+
+        $user = User::where('email', $request['email'])->where('status', '!=', UserStatus::BLOCKED)->where('two_factor_provider', '!=', null)->firstOrFail();
+
+        if ($user->status == UserStatus::APPROVED || (config('auth.pendent_user') && $user->status == UserStatus::PENDENT)) {
+            return TwoFactorHelper::send($user->id);
+        }
+    }
+
+    /**
+     * Confirm login two factor code.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
+     *
+     */
+    public function confirm(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|string|email',
+            'code' => 'required|string',
+        ]);
+
+        $user = User::where('email', $request['email'])->where('status', '!=', UserStatus::BLOCKED)->where('two_factor_provider', '!=', null)->firstOrFail();
+
+        $verification = TwoFactorHelper::verify($user->id, $request['code']);
+
+        if (!$verification) {
+            return  new JsonResponse([
+                'message' => trans('twoFactor.verify.message'),
+                'error' => trans('twoFactor.verify.error')
+            ], 422);
+        }
+
+        if ($token = auth()->login($user, true)) {
+            return $this->respondWithToken($token);
+        }
+    }
+
+    /**
+     * Recovery user two factor.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
+     *
+     */
+    public function recovery(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|string|email',
+            'code' => 'required|string',
+        ]);
+
+        $user = User::where('email', $request['email'])->where('status', '!=', UserStatus::BLOCKED)->where('two_factor_provider', '!=', null)->firstOrFail();
+
+        $verification = TwoFactorRecoveryHelper::recovery($user, $request['code']);
+
+        if (!$verification) {
+            return  new JsonResponse([
+                'message' => trans('twoFactor.recovery.message'),
+                'error' => trans('twoFactor.recovery.error')
+            ], 422);
+        }
+
+        if ($token = auth()->login($user, true)) {
+            return $this->respondWithToken($token);
+        }
+    }
+
+    public function handleProviderCallback(Request $request, $provider)
+    {
+        $user = Socialite::driver($provider)->stateless()->user();
         $email = Str::lower($user->email);
 
         $validUser = User::where('email', $email)->first();
         if (!$validUser) {
             $validUser = User::create([
-                'name'=>ucwords($user->name),
+                'avatar' => $user->avatar,
+                'name' => ucwords($user->name),
                 'email' => $email,
                 'email_verified_at' => now(),
                 'password' => Hash::make(Str::random(18)),
-                'role_id' => config('auth.default_role'),
-                'status' => UserStatus::APPROVED
+                'role_id' => config('auth.default_role')
             ]);
         }
 
-        if (config('auth.pendent_user')) {
-            if ($validUser->status == UserStatus::BLOCKED) {
+        $request['email'] = $email;
 
-                return response()->json([
-                    'message' => trans('message.no_access'),
-                    'error' => trans('auth.user_blocked')
-                ], 422);
-            }
-        } else {
-            if ($validUser->status != UserStatus::APPROVED) {
-
-                return response()->json([
-                    'message' => trans('message.no_access'),
-                    'error' => trans('auth.user_pendent_or_blocked')
-                ], 422);
-            }
+        if ($checker = $this->userCheck($request)) {
+            return $checker;
         }
 
         if ($token = auth()->login($validUser, true)) {

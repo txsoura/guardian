@@ -76,7 +76,7 @@ class RoleController extends Controller
 
         $role->update($request->all());
 
-        return new RoleResource($role, 202);
+        return new RoleResource($role, 200);
     }
 
     /**
@@ -88,6 +88,6 @@ class RoleController extends Controller
     public function destroy(Role $role)
     {
         $role->delete();
-        return response()->json(['message' => trans('message.deleted')], 204);
+        return response()->json(['message' => trans('message.deleted')], 200);
     }
 }

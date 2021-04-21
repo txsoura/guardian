@@ -56,6 +56,6 @@ class RolePermissionController extends Controller
             ->where('acl_permission_id', $permission->id)
             ->delete();
 
-        return response()->json(['message' => trans('message.deleted')], 204);
+        return response()->json(['message' => trans('message.deleted')], 200);
     }
 }

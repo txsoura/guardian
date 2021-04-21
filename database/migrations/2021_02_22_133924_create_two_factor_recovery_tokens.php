@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateAccessTokensTable extends Migration
+class CreateTwoFactorRecoveryTokens extends Migration
 {
     /**
      * Run the migrations.
@@ -13,13 +13,10 @@ class CreateAccessTokensTable extends Migration
      */
     public function up()
     {
-        Schema::create('access_tokens', function (Blueprint $table) {
-            $table->bigIncrements('id');
-            $table->string('name');
-            $table->string('token', 64)->unique();
-            $table->text('abilities');
-            $table->timestamp('last_used_at')->nullable();
-            $table->timestamp('expiration')->nullable();
+        Schema::create('two_factor_recovery_tokens', function (Blueprint $table) {
+            $table->id();
+            $table->string('code')->unique();
+            $table->boolean('used')->default(false);
             $table->foreignId('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->timestamps();
             $table->softDeletes();
@@ -33,6 +30,6 @@ class CreateAccessTokensTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('personal_access_tokens');
+        Schema::dropIfExists('two_factor_recovery_tokens');
     }
 }

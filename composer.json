@@ -46,7 +46,8 @@
             "App\\": "app/"
         },
         "classmap": [
-            "database/seeds"
+            "database/seeds",
+            "database/factories"
         ],
         "files": [
             "app/Http/Helpers/TwilioHelper.php",

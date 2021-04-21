@@ -14,9 +14,13 @@ return [
     */
 
     'reset' => 'Sua senha foi redefinida!',
-    'sent' => 'Enviamos seu link de redefinição de senha por e-mail!',
+    'sent' => 'Enviamos seu link de redefinição de senha por email!',
     'throttled' => 'Aguarde antes de tentar novamente.',
     'token' => 'Este token de redefinição de senha é inválido.',
-    'user' => "Não encontramos um usuário com esse endereço de e-mail.",
-
+    'user' => "Não encontramos um usuário com esse email.",
+    'updated' => "Senha atualizada",
+    "update" => [
+        'message' => "Não é possível atualizar a senha",
+        'error' => "Senha incorreta"
+    ]
 ];

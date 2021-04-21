@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -22,30 +23,6 @@ Route::get('/v1', function () {
     ];
 });
 
-Route::fallback(function () {
-    return response()->json(['message' => trans('message.not_found'), 'error' => trans('message.route_not_found')], 404);
-});
-
-
-Route::group(['prefix' => 'v1/auth', 'middleware' => 'api'], function () {
-    Route::post('login', 'Auth\LoginController@login');
-    Route::get('{provider}/callback', 'Auth\LoginController@handleProviderCallback');
-    Route::get('me', 'Auth\LoginController@me')->middleware('jwt.auth');
-    Route::get('me/permissions', 'Auth\LoginController@permissions')->middleware('jwt.auth');
-    Route::post('refresh', 'Auth\LoginController@refresh')->middleware('jwt.auth');
-    Route::post('logout', 'Auth\LoginController@logout')->middleware('jwt.auth');
-
-    Route::post('register', 'Auth\RegisterController@register');
-
-    Route::post('email/resend', 'Auth\VerificationController@resend');
-    Route::get('email/verify', 'Auth\VerificationController@notice');
-    Route::get('email/verify/{id}/{hash}', 'Auth\VerificationController@verify');
-
-    Route::post('password/confirm', 'Auth\ConfirmPasswordController@confirm');
-    Route::post('password/email', 'Auth\ForgotPasswordController@sendResetLinkEmail');
-    Route::post('password/reset', 'Auth\ResetPasswordController@reset');
-});
-
 Route::group(['prefix' => 'v1', 'middleware' => 'jwt.auth'], function () {
     // ACL
     Route::group(['prefix' => 'acl'], function () {
@@ -60,7 +37,4 @@ Route::group(['prefix' => 'v1', 'middleware' => 'jwt.auth'], function () {
     Route::apiResource('users', 'UserController');
     Route::put('users/{user}/approve', 'UserController@approve')->name('users.approve');
     Route::put('users/{user}/block', 'UserController@block')->name('users.block');
-
-    // Access token
-    Route::apiResource('users/{user}/tokens', 'AccessTokenController');
 });

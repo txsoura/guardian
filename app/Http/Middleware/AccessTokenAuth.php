@@ -34,6 +34,9 @@ class AccessTokenAuth
             ], 401);
         }
 
+        $accessToken->last_used_at=now();
+        $accessToken->update();
+
         return $next($request);
     }
 }

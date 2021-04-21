@@ -20,7 +20,7 @@ class CreateAccessTokensTable extends Migration
             $table->text('abilities');
             $table->timestamp('last_used_at')->nullable();
             $table->timestamp('expiration')->nullable();
-            $table->foreignId('user_id')->nullable()->constrained('users');
+            $table->foreignId('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->timestamps();
             $table->softDeletes();
         });

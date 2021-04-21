@@ -16,9 +16,9 @@ class AccessTokenController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index(User $user)
+    public function index()
     {
-        return AccessTokenResource::collection(AccessToken::where('user_id', $user->id)->orderBy('last_used_at', 'desc')->get(), 200);
+        return AccessTokenResource::collection(AccessToken::where('user_id', auth()->user()->id)->orderBy('last_used_at', 'desc')->get(), 200);
     }
 
     /**
@@ -27,62 +27,70 @@ class AccessTokenController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request, User $user)
+    public function store(Request $request)
     {
         $request->validate([
             'name' => 'required|string',
-            'expiration' => 'required|date',
-            'abilities' => 'required',
+            'expiration' => 'nullable|date',
+            'abilities' => 'required|string',
         ]);
 
-        $request['user_id'] = $user->id;
-        $request['token'] = Hash::make(Str::random(13));
+        $token = AccessToken::create([
+            "user_id" => auth()->user()->id,
+            'token' => Hash::make(Str::random(13)),
+            'name' => $request['name'],
+            'expiration' => $request['expiration'],
+            'abilities' => $request['abilities']
+        ]);
 
-        $accessToken = AccessToken::create($request->all());
-        return new AccessTokenResource($accessToken, 201);
+        return new AccessTokenResource($token, 201);
     }
 
     /**
      * Display the specified resource.
      *
-     * @param  \App\Models\AccessToken  $accessToken
+     * @param  \App\Models\AccessToken  $token
      * @return \Illuminate\Http\Response
      */
-    public function show(User $user, AccessToken $accessToken)
+    public function show(AccessToken $token)
     {
-        return new AccessTokenResource(AccessToken::where('id', $accessToken->id)->where('user_id', $user->id)->firstOrFail(), 200);
+        return new AccessTokenResource(AccessToken::where('id', $token->id)->where('user_id', auth()->user()->id)->firstOrFail(), 200);
     }
 
     /**
      * Update the specified resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\AccessToken  $accessToken
+     * @param  \App\Models\AccessToken  $token
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, User $user, AccessToken $accessToken)
+    public function update(Request $request, AccessToken $token)
     {
         $request->validate([
-            'name' => 'string',
-            'expiration' => 'date',
-            'abilities' => 'string',
+            'name' => 'required|string',
+            'expiration' => 'nullable|date',
+            'abilities' => 'required|string',
         ]);
 
-        $accessToken = AccessToken::where('id', $accessToken->id)->where('user_id', $user->id)->firstOrFail();
-        $accessToken->update();
-        return new AccessTokenResource($accessToken, 202);
+        $token = AccessToken::where('id', $token->id)->where('user_id',  auth()->user()->id)->firstOrFail();
+        $token->name=$request['name'];
+        $token->expiration=$request['expiration'];
+        $token->abilities=$request['abilities'];
+        $token->update();
+
+        return new AccessTokenResource($token, 200);
     }
 
     /**
      * Remove the specified resource from storage.
      *
-     * @param  \App\Models\AccessToken  $accessToken
+     * @param  \App\Models\AccessToken  $token
      * @return \Illuminate\Http\Response
      */
-    public function destroy(User $user, AccessToken $accessToken)
+    public function destroy(AccessToken $token)
     {
-        $accessToken = AccessToken::where('id', $accessToken->id)->where('user_id', $user->id)->firstOrFail();
-        $accessToken->delete();
-        return response()->json(['message' => trans('message.deleted')], 204);
+        $token = AccessToken::where('id', $token->id)->where('user_id',  auth()->user()->id)->firstOrFail();
+        $token->delete();
+        return response()->json(['message' => trans('message.deleted')], 200);
     }
 }

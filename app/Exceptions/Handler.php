@@ -2,11 +2,17 @@
 
 namespace App\Exceptions;
 
-use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
-use Illuminate\Support\Facades\Log;
-use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 use Throwable;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\Eloquent\RelationNotFoundException;
+use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Illuminate\Routing\Exceptions\InvalidSignatureException;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
+use Symfony\Component\Routing\Exception\RouteNotFoundException;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use Tymon\JWTAuth\Exceptions\TokenBlacklistedException;
 use Tymon\JWTAuth\Exceptions\TokenExpiredException;
@@ -65,6 +71,26 @@ class Handler extends ExceptionHandler
             ], 404);
         }
 
+        if ($exception instanceof RelationNotFoundException && $request->wantsJson()) {
+            return response()->json([
+                'message' => trans('message.not_found'),
+                'error' => trans('message.relation_not_found')
+            ], 404);
+        }
+
+        if ($exception instanceof AccessDeniedHttpException && $request->wantsJson()) {
+            return response()->json([
+                'message' => trans('message.no_permission'),
+                'error' => trans('auth.access_denied')
+            ], 403);
+        }
+
+        if ($exception instanceof InvalidSignatureException && $request->wantsJson()) {
+            return response()->json([
+                'error' => trans('message.invalid_signature')
+            ], 403);
+        }
+
         if ($exception instanceof UnauthorizedHttpException) {
             $preException = $exception->getPrevious();
             if ($preException instanceof
@@ -104,6 +130,13 @@ class Handler extends ExceptionHandler
                 ], 401);
             }
 
+            if ($exception->getMessage() === 'User not found') {
+                return response()->json([
+                    'message' => trans('message.not_found'),
+                    'error' => trans('auth.user_not_found')
+                ], 404);
+            }
+
             //To log untreated unauthorized exceptions
             Log::error('UNAUTHORIZED_EXCEPTION:' . $exception->getMessage());
             return response()->json([
@@ -118,17 +151,30 @@ class Handler extends ExceptionHandler
             return response()->json([
                 'message' => trans('auth.unauthenticated'),
                 'error' => trans('auth.user_already_logged_out')
-            ], 422);
+            ], 401);
         }
 
-        if ($exception instanceof
-            UnauthorizedHttpException
-        ) {
+        if ($exception instanceof MethodNotAllowedHttpException && $request->wantsJson()) {
+            return response()->json([
+                'error' => $exception->getMessage()
+            ], 405);
+        }
+
+        if ($exception instanceof NotFoundHttpException && $request->wantsJson()) {
             return response()->json([
                 'message' => trans('message.not_found'),
-                'error' => trans('auth.user_not_found')
+                'error' => trans('message.route_not_found')
             ], 404);
         }
+
+
+        if ($exception instanceof RouteNotFoundException && $request->wantsJson()) {
+            return response()->json([
+                'message' => trans('message.not_found'),
+                'error' => trans('message.route_not_found')
+            ], 404);
+        }
+
 
         return parent::render($request, $exception);
     }

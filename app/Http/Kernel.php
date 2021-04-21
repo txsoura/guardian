@@ -39,10 +39,19 @@ class Kernel extends HttpKernel
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ],
 
+        'auth' => [
+            'throttle:60,1',
+            \App\Http\Middleware\ResponseJson::class,
+            \App\Http\Middleware\CheckLocale::class,
+            \App\Http\Middleware\AuthStatusCheck::class,
+            \Illuminate\Routing\Middleware\SubstituteBindings::class,
+        ],
+
         'api' => [
             'throttle:60,1',
             \App\Http\Middleware\ResponseJson::class,
             \App\Http\Middleware\CheckLocale::class,
+            \App\Http\Middleware\AuthStatusCheck::class,
             \App\Http\Middleware\AuthACL::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ],

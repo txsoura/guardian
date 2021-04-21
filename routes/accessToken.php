@@ -22,16 +22,8 @@ Route::get('/v1', function () {
     ];
 });
 
-Route::fallback(function () {
-    return response()->json(['message' => trans('message.not_found'), 'error' => trans('message.route_not_found')], 404);
+
+
+Route::group(['prefix' => 'v1/auth'], function () {
+    Route::get('me', 'MeController@show');
 });
-
-
-Route::group(['prefix' => 'v1/auth', 'middleware' => 'api'], function () {
-    Route::get('me', 'Auth\LoginController@me');
-});
-
-// Route::group(['prefix' => 'v1'], function () {
-//     // User
-//     Route::apiResource('users', 'UserController');
-// });

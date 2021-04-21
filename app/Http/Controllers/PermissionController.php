@@ -81,7 +81,7 @@ class PermissionController extends Controller
 
         $permission->update($request->all());
 
-        return new PermissionResource($permission, 202);
+        return new PermissionResource($permission, 200);
     }
 
     /**
@@ -93,6 +93,6 @@ class PermissionController extends Controller
     public function destroy(Permission $permission)
     {
         $permission->delete();
-        return response()->json(['message' => trans('message.deleted')], 204);
+        return response()->json(['message' => trans('message.deleted')], 200);
     }
 }

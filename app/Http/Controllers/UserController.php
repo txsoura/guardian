@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Enums\UserStatus;
+use App\Events\UserCreated;
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -14,6 +16,7 @@ class UserController extends Controller
     /**
      * Display a listing of the resource.
      *
+     * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
     public function index(Request $request)
@@ -41,15 +44,21 @@ class UserController extends Controller
         $request->validate([
             'name' => 'required|string',
             'email' => 'required|string|email|max:255|unique:users',
-            'cellphone' => 'nullable|numeric|unique:users',
-            'password' => 'required|string|min:8|confirmed',
-            'role' => 'required|numeric|exists:acl_roles,id'
+            'role_id' => 'required|numeric|exists:acl_roles,id'
         ]);
 
-        $request['name'] = ucwords($request['name']);
-        $request['password'] = Hash::make($request['password']);
-        $request['status'] = UserStatus::APPROVED;
-        $user = User::create($request->all());
+        $password = Str::random(8);
+
+        $user = User::create([
+            'name' => ucwords($request['name']),
+            'email' => $request['email'],
+            'role_id' => $request['role_id'],
+            'password' => Hash::make($password),
+            'status' => UserStatus::APPROVED
+        ]);
+
+        event(new UserCreated($user, $password));
+        event(new Registered($user));
 
         return new UserResource($user, 201);
     }
@@ -57,12 +66,13 @@ class UserController extends Controller
     /**
      * Display the specified resource.
      *
+     * @param  \Illuminate\Http\Request  $request
      * @param  \App\Models\User  $user
      * @return \Illuminate\Http\Response
      */
     public function show(Request $request, User $user)
     {
-        return new UserResource(User::find($user->id)
+        return new UserResource(User::where('id', $user->id)
             ->when($request['include'], function ($query, $include) {
                 return $query->with(explode(',',  $include));
             })
@@ -79,17 +89,12 @@ class UserController extends Controller
     public function update(Request $request, User $user)
     {
         $request->validate([
-            'name' => 'string',
-            'cellphone' => 'nullable|numeric|unique:users',
-            'password' => 'string|min:8|confirmed',
             'role_id' => 'numeric|exists:acl_roles,id',
         ]);
 
-        $request['name'] = ucwords($request['name']);
-        $request['password'] = Hash::make($request['password']);
-        $user->update($request->all());
+        $user->update($request->only('role_id'));
 
-        return new UserResource($user, 202);
+        return new UserResource($user, 200);
     }
 
     /**
@@ -101,13 +106,12 @@ class UserController extends Controller
     public function destroy(User $user)
     {
         $user->delete();
-        return response()->json(['message' => trans('message.deleted')], 204);
+        return response()->json(['message' => trans('message.deleted')], 200);
     }
 
     /**
      * Update the status to approved.
      *
-     * @param  \Illuminate\Http\Request  $request
      * @param  \App\Models\User  $user
      * @return \Illuminate\Http\Response
      */
@@ -116,13 +120,12 @@ class UserController extends Controller
         $user->status = UserStatus::APPROVED;
         $user->update();
 
-        return new UserResource($user, 202);
+        return new UserResource($user, 200);
     }
 
     /**
      * Update the status to blocked.
      *
-     * @param  \Illuminate\Http\Request  $request
      * @param  \App\Models\User  $user
      * @return \Illuminate\Http\Response
      */
@@ -131,6 +134,6 @@ class UserController extends Controller
         $user->status = UserStatus::BLOCKED;
         $user->update();
 
-        return new UserResource($user, 202);
+        return new UserResource($user, 200);
     }
 }

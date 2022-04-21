@@ -26,7 +26,7 @@ return [
     |
     */
 
-    'version' => '0.0.4.7',
+    'version' => '0.0.8.5',
 
     /*
     |--------------------------------------------------------------------------
@@ -116,7 +116,7 @@ return [
     |--------------------------------------------------------------------------
     |
     | This locale will be used by the Faker PHP library when generating fake
-    | data for your database seeds. For example, this will be used to get
+    | data for your database seeders. For example, this will be used to get
     | localized telephone numbers, street address information and more.
     |
     */
@@ -189,6 +189,7 @@ return [
         // App\Providers\BroadcastServiceProvider::class,
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
+        App\Providers\TelescopeServiceProvider::class,
 
     ],
 

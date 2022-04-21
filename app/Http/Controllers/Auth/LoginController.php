@@ -2,20 +2,29 @@
 
 namespace App\Http\Controllers\Auth;
 
-use App\Models\User;
 use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Helpers\ActivityLog;
 use App\Http\Helpers\TwoFactorHelper;
 use App\Http\Helpers\TwoFactorRecoveryHelper;
-use Illuminate\Http\Request;
-use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\ValidationException;
+use App\Http\Resources\UserResource;
+use App\Mail\Login;
+use App\Models\User;
+use Illuminate\Contracts\Auth\Guard;
+use Illuminate\Contracts\Auth\StatefulGuard;
 use Illuminate\Foundation\Auth\ThrottlesLogins;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Laravel\Socialite\Facades\Socialite;
+use Symfony\Component\HttpFoundation\RedirectResponse;
+use Symfony\Component\HttpFoundation\Response;
+use Twilio\Exceptions\ConfigurationException;
+use Twilio\Exceptions\TwilioException;
 
 class LoginController extends Controller
 {
@@ -35,10 +44,9 @@ class LoginController extends Controller
     /**
      * Handle a login request to the application.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response|\Illuminate\Http\JsonResponse
-     *
-     * @throws \Illuminate\Validation\ValidationException
+     * @param Request $request
+     * @return JsonResponse
+     * @throws ConfigurationException|TwilioException|ValidationException
      */
     public function login(Request $request)
     {
@@ -70,16 +78,15 @@ class LoginController extends Controller
         // user surpasses their maximum number of attempts they will get locked out.
         $this->incrementLoginAttempts($request);
 
-        return $this->sendFailedLoginResponse($request);
+        return $this->sendFailedLoginResponse();
     }
 
     /**
      * Validate the user login request.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param Request $request
      * @return void
      *
-     * @throws \Illuminate\Validation\ValidationException
      */
     protected function validateLogin(Request $request)
     {
@@ -91,12 +98,22 @@ class LoginController extends Controller
     }
 
     /**
+     * Get the login username to be used by the controller.
+     *
+     * @return string
+     */
+    public function username(): string
+    {
+        return 'email';
+    }
+
+    /**
      * Attempt to log the user into the application.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param Request $request
      * @return bool
      */
-    protected function attemptLogin(Request $request)
+    protected function attemptLogin(Request $request): bool
     {
         return $this->guard()->attempt(
             $this->credentials($request),
@@ -105,50 +122,32 @@ class LoginController extends Controller
     }
 
     /**
+     * Get the guard to be used during authentication.
+     *
+     * @return Guard|StatefulGuard
+     */
+    protected function guard()
+    {
+        return Auth::guard();
+    }
+
+    /**
      * Get the needed authorization credentials from the request.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param Request $request
      * @return array
      */
-    protected function credentials(Request $request)
+    protected function credentials(Request $request): array
     {
         return $request->only($this->username(), 'password', 'status');
     }
 
     /**
-     * Send the response after the user was authenticated.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
-    protected function sendLoginResponse(Request $request)
-    {
-        $this->clearLoginAttempts($request);
-
-        if ($response = $this->authenticated($request, $this->guard()->user())) {
-            return $response;
-        }
-
-        return new Response('', 204);
-    }
-
-    /**
-     * The user has been authenticated.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  mixed  $user
-     * @return mixed
-     */
-    protected function authenticated(Request $request)
-    {
-        return $this->respondWithToken(auth()->attempt($this->credentials($request)));
-    }
-
-    /**
      * Check extra user data before authentication, such as status and two-factor enabled.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  mixed  $user
+     * @param Request $request
+     * @return false|JsonResponse
+     * @throws ConfigurationException|TwilioException
      */
     protected function userCheck(Request $request)
     {
@@ -165,31 +164,90 @@ class LoginController extends Controller
         if (($user->status == UserStatus::APPROVED || (config('auth.pendent_user') && $user->status == UserStatus::PENDENT)) && $user->two_factor_provider != null) {
             return TwoFactorHelper::send($user->id);
         }
+
+        return 0;
     }
 
 
     /**
      * The user has no access to the application.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return mixed
+     * @param $text
+     * @return JsonResponse
      */
-    protected function noAccess($text)
+    protected function noAccess($text): JsonResponse
     {
-        return response()->json([
-            'message' =>  trans('message.no_access'),
+        return new JsonResponse([
+            'message' => trans('message.no_access'),
             'error' => $text == 'blocked' ? trans('auth.user_blocked') : trans('auth.user_pendent')
-        ], 422);
+        ], 403);
+    }
+
+    /**
+     * Send the response after the user was authenticated.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    protected function sendLoginResponse(Request $request): JsonResponse
+    {
+        $this->clearLoginAttempts($request);
+
+        if ($response = $this->authenticated($request)) {
+            return $response;
+        }
+
+        return new JsonResponse(['message' => trans('auth.login_failed')], 400);
+    }
+
+    /**
+     * The user has been authenticated.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    protected function authenticated(Request $request): JsonResponse
+    {
+        $this->sendLoginAttempEmailNotification($request->email, $request->ip());
+
+        $response = $this->respondWithToken(auth()->attempt($this->credentials($request)));
+
+        ActivityLog::createActivityLog('auth_login', 'auth_login_description', "users", auth()->user()->id, $request);
+
+        return $response;
+    }
+
+    private function sendLoginAttempEmailNotification($email, $ip)
+    {
+        $data = ['ip' => $ip, 'date' => now() . " (UTC)"];
+
+        Mail::to($email)->queue(new Login($data));
+    }
+
+    /**
+     * Get the token array structure.
+     *
+     * @param string $token
+     * @return JsonResponse
+     */
+    private function respondWithToken(string $token): JsonResponse
+    {
+        return new JsonResponse([
+            'message' => trans('auth.user_logged_in'),
+            'access_token' => $token,
+            'token_type' => 'bearer',
+            'expires_in' => auth()->factory()->getTTL() * 60,
+            'user' => new UserResource(auth()->user()),
+        ]);
     }
 
     /**
      * Get the failed login response instance.
      *
-     * @return \Symfony\Component\HttpFoundation\Response
-     *
-     * @throws \Illuminate\Validation\ValidationException
+     * @return Response
+     * @throws ValidationException
      */
-    protected function sendFailedLoginResponse()
+    protected function sendFailedLoginResponse(): Response
     {
         throw ValidationException::withMessages([
             $this->username() => [trans('auth.failed')],
@@ -197,82 +255,48 @@ class LoginController extends Controller
     }
 
     /**
-     * Get the login username to be used by the controller.
-     *
-     * @return string
-     */
-    public function username()
-    {
-        return 'email';
-    }
-
-    /**
      * Log the user out of the application.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @param Request $request
+     * @return JsonResponse
      */
-    public function logout(Request $request)
+    public function logout(Request $request): JsonResponse
     {
-        $this->guard()->logout(true);
+        ActivityLog::createActivityLog('auth_logout', 'auth_logout_description', "users", auth()->user()->id, $request);
 
-        if ($response = $this->loggedOut($request)) {
+        $this->guard()->logout();
+
+        if ($response = $this->loggedOut()) {
+
             return $response;
         }
 
-        if ($request->wantsJson()) {
-            return new Response('', 204);
-        }
+        return new JsonResponse(['message' => trans('auth.logout_failed')], 400);
     }
 
     /**
      * The user has logged out of the application.
      *
-     * @return mixed
+     * @return JsonResponse
      */
-    protected function loggedOut()
+    protected function loggedOut(): JsonResponse
     {
-        return response()->json(['message' => trans('auth.user_logged_out')], 200);
-    }
-
-    /**
-     * Get the guard to be used during authentication.
-     *
-     * @return \Illuminate\Contracts\Auth\StatefulGuard
-     */
-    protected function guard()
-    {
-        return Auth::guard();
+        return new JsonResponse(['message' => trans('auth.user_logged_out')]);
     }
 
     /**
      * Refresh a token.
      *
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
-    public function refresh()
+    public function refresh(): JsonResponse
     {
-        return $this->respondWithToken(auth()->refresh(true,true));
+        ActivityLog::createActivityLog('auth_refresh', 'auth_refresh_description', "users", auth()->user()->id, request());
+
+        return $this->respondWithToken(auth()->refresh(true, true));
     }
 
-    /**
-     * Get the token array structure.
-     *
-     * @param  string $token
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
-    private function respondWithToken($token)
-    {
-        return response()->json([
-            'message' =>  trans('auth.user_logged_in'),
-            'access_token' => $token,
-            'token_type' => 'bearer',
-            'expires_in' => auth()->factory()->getTTL() * 60
-        ], 200);
-    }
-
-    public function redirectToProvider($provider)
+    public function redirectToProvider($provider): RedirectResponse
     {
         return Socialite::driver($provider)->redirect();
     }
@@ -280,99 +304,134 @@ class LoginController extends Controller
     /**
      * Resend login two factor code.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
+     * @param Request $request
+     * @return JsonResponse
+     * @throws TwilioException|ConfigurationException
      *
      */
-    public function resend(Request $request)
+    public function resend(Request $request): JsonResponse
     {
         $request->validate([
             'email' => 'required|string|email',
         ]);
 
-        $user = User::where('email', $request['email'])->where('status', '!=', UserStatus::BLOCKED)->where('two_factor_provider', '!=', null)->firstOrFail();
+        $user = User::where('email', $request['email'])
+            ->where('status', '!=', UserStatus::BLOCKED)
+            ->where('two_factor_provider', '!=', null)
+            ->firstOrFail();
 
         if ($user->status == UserStatus::APPROVED || (config('auth.pendent_user') && $user->status == UserStatus::PENDENT)) {
             return TwoFactorHelper::send($user->id);
         }
+
+        return new JsonResponse(['message' => trans('twoFactor.two_factor_resend_failed')], 400);
     }
 
     /**
      * Confirm login two factor code.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
-     *
+     * @param Request $request
+     * @return JsonResponse
+     * @throws ConfigurationException|TwilioException
      */
-    public function confirm(Request $request)
+    public function confirm(Request $request): JsonResponse
     {
         $request->validate([
             'email' => 'required|string|email',
-            'code' => 'required|string',
+            'code' => 'required|string|digits:6',
         ]);
 
-        $user = User::where('email', $request['email'])->where('status', '!=', UserStatus::BLOCKED)->where('two_factor_provider', '!=', null)->firstOrFail();
+        $user = User::where('email', $request['email'])
+            ->where('status', '!=', UserStatus::BLOCKED)
+            ->where('two_factor_provider', '!=', null)
+            ->firstOrFail();
 
         $verification = TwoFactorHelper::verify($user->id, $request['code']);
 
         if (!$verification) {
-            return  new JsonResponse([
+            return new JsonResponse([
                 'message' => trans('twoFactor.verify.message'),
                 'error' => trans('twoFactor.verify.error')
-            ], 422);
+            ], 400);
         }
 
         if ($token = auth()->login($user, true)) {
-            return $this->respondWithToken($token);
+            $this->sendLoginAttempEmailNotification($request->email, $request->ip());
+
+            $response = $this->respondWithToken($token);
+
+            ActivityLog::createActivityLog('auth_two_factor_confirm', 'auth_two_factor_confirm_description', "users", auth()->user()->id, $request);
+
+            return $response;
         }
+
+        return new JsonResponse(['message' => trans('auth.login_confirm_failed')], 400);
     }
 
     /**
      * Recovery user two factor.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
+     * @param Request $request
+     * @return JsonResponse
      *
      */
-    public function recovery(Request $request)
+    public function recovery(Request $request): JsonResponse
     {
         $request->validate([
             'email' => 'required|string|email',
             'code' => 'required|string',
         ]);
 
-        $user = User::where('email', $request['email'])->where('status', '!=', UserStatus::BLOCKED)->where('two_factor_provider', '!=', null)->firstOrFail();
+        $user = User::where('email', $request['email'])
+            ->where('status', '!=', UserStatus::BLOCKED)
+            ->where('two_factor_provider', '!=', null)
+            ->firstOrFail();
 
         $verification = TwoFactorRecoveryHelper::recovery($user, $request['code']);
 
         if (!$verification) {
-            return  new JsonResponse([
+            return new JsonResponse([
                 'message' => trans('twoFactor.recovery.message'),
                 'error' => trans('twoFactor.recovery.error')
-            ], 422);
+            ], 400);
         }
 
         if ($token = auth()->login($user, true)) {
-            return $this->respondWithToken($token);
+
+            $this->sendLoginAttempEmailNotification($request->email, $request->ip());
+
+            $response = $this->respondWithToken($token);
+
+            ActivityLog::createActivityLog('auth_two_factor_recovery', 'auth_two_factor_recovery_description', "users", auth()->user()->id, $request);
+
+            return $response;
         }
+
+        return new JsonResponse(['message' => trans('twoFactor.two_factor_recovery_failed')], 400);
     }
 
+    /**
+     * @throws TwilioException|ConfigurationException
+     */
     public function handleProviderCallback(Request $request, $provider)
     {
         $user = Socialite::driver($provider)->stateless()->user();
         $email = Str::lower($user->email);
 
         $validUser = User::where('email', $email)->first();
+
         if (!$validUser) {
             $validUser = User::create([
                 'avatar' => $user->avatar,
                 'name' => ucwords($user->name),
                 'email' => $email,
                 'email_verified_at' => now(),
-                'password' => Hash::make(Str::random(18)),
+                'password' => Str::random(18),
                 'role_id' => config('auth.default_role')
             ]);
         }
+
+        App::setLocale($validUser->lang);
 
         $request['email'] = $email;
 
@@ -382,7 +441,15 @@ class LoginController extends Controller
 
         if ($token = auth()->login($validUser, true)) {
 
-            return $this->respondWithToken($token);
+            $this->sendLoginAttempEmailNotification($request->email, $request->ip());
+
+            $response = $this->respondWithToken($token);
+
+            ActivityLog::createActivityLog('auth_social_login', 'auth_social_login_description', "users", auth()->user()->id, $request);
+
+            return $response;
         }
+
+        return new JsonResponse(['message' => trans('auth.social_login_failed')], 400);
     }
 }

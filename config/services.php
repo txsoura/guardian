@@ -31,25 +31,21 @@ return [
     ],
 
     'google' => [
-        'client_id'     => env('GOOGLE_CLIENT_ID'),
+        'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
-        'redirect'      => env('GOOGLE_REDIRECT')
+        'redirect' => env('GOOGLE_REDIRECT')
     ],
 
-    'twitter' => [
-        'client_id'     => env('TWITTER_CLIENT_ID'),
-        'client_secret' => env('TWITTER_CLIENT_SECRET'),
-        'redirect'      => env('TWITTER_REDIRECT')
+    'facebook' => [
+        'client_id' => env('FACEBOOK_CLIENT_ID'),
+        'client_secret' => env('FACEBOOK_CLIENT_SECRET'),
+        'redirect' => env('FACEBOOK_REDIRECT')
     ],
 
     'twilio' => [
-        'sid'     => env('TWILIO_SID'),
+        'sid' => env('TWILIO_SID'),
         'auth_token' => env('TWILIO_AUTH_TOKEN'),
-        'verify_sid'      => env('TWILIO_VERIFY_SID')
+        'verify_sid' => env('TWILIO_VERIFY_SID')
     ],
 
-    //App integrate
-    // 'app prefix' => [
-    //     'key'     => env('APP_PREFIX_KEY')
-    // ],
 ];

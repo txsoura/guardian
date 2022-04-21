@@ -5,10 +5,11 @@ namespace App\Enums;
 use MyCLabs\Enum\Enum;
 
 /**
- * @method Two factor provider enum
+ *  Two factor provider enum
  */
 final class TwoFactorProvider extends Enum
 {
-    const SMS =  'sms';
-    const MAIL =   'mail';
+    const SMS = 'sms';
+    const MAIL = 'mail';
+    const GOOGLE_AUTHENTICATOR = 'google_authenticator';
 }

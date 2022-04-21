@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Storage;
 
@@ -10,10 +11,10 @@ class UserResource extends JsonResource
     /**
      * Transform the resource into an array.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param Request $request
      * @return array
      */
-    public function toArray($request)
+    public function toArray($request): array
     {
         return [
             'id' => $this->id,
@@ -22,6 +23,8 @@ class UserResource extends JsonResource
             'email' => $this->email,
             'cellphone' => $this->cellphone,
             'status' => $this->status,
+            'lang' => $this->lang,
+            'fcm_token' => $this->fcm_token,
             'role' => $this->role ? $this->role->name : '',
             'email_verified_at' => $this->email_verified_at,
             'cellphone_verified_at' => $this->cellphone_verified_at,
@@ -41,7 +44,9 @@ class UserResource extends JsonResource
                 return $this->avatar;
             }
 
-            return config('app.url') . Storage::url($this->avatar);
+            return Storage::disk('spaces')->temporaryUrl($this->avatar, now()->addMinutes(3));
         }
+
+        return null;
     }
 }

@@ -8,35 +8,45 @@ use Ramsey\Uuid\Uuid;
 
 class TwoFactorRecoveryHelper
 {
-    //  get first or create user two factor recovery code
-    public static function firstOrCreate(User $user)
+    /**
+     * get first or create user two factor recovery code
+     *
+     * @param User $user
+     * @return string
+     */
+    public static function firstOrCreate(User $user): string
     {
-        $recovery = TwoFactorRecovery::where('user_id', $user->id)->where('used', false)->first();
-
-        if (!$recovery) {
-            $recovery =  TwoFactorRecovery::create([
-                'code' => Uuid::uuid4(),
-                'user_id' => $user->id,
-            ]);
-        }
+        $recovery = TwoFactorRecovery::firstOrCreate([
+            'user_id' => $user->id,
+            'used' => false
+        ], [
+            'code' => Uuid::uuid4(),
+            'user_id' => $user->id,
+        ]);
 
         return $recovery->code;
     }
 
-    //  delete user two factor recovery code
+    /**
+     * delete user two factor recovery code
+     *
+     * @param User $user
+     */
     public static function delete(User $user)
     {
-        $recovery = TwoFactorRecovery::where('user_id', $user->id)->where('used', false)->first();
-
-        if ($recovery) {
-            $recovery->delete();
-        }
-
-        return;
+        TwoFactorRecovery::where('user_id', $user->id)
+            ->where('used', false)
+            ->delete();
     }
 
-    //Check recovery token & disable two factor
-    public static function recovery(User $user, $code)
+    /**
+     * Check recovery token & disable two factor
+     *
+     * @param User $user
+     * @param string $code
+     * @return boolean
+     */
+    public static function recovery(User $user, string $code): bool
     {
         $twoFactorRecovery = TwoFactorRecovery::where('code', $code)
             ->where('user_id', $user->id)

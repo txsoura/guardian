@@ -3,11 +3,12 @@
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Lang;
 
-class UserPassword extends Mailable
+class UserPassword extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
@@ -30,6 +31,6 @@ class UserPassword extends Mailable
      */
     public function build()
     {
-        return $this->markdown('email.password')->subject(Lang::get('mail.password.subject'))->with($this->password);
+        return $this->markdown('email.user_password')->subject(Lang::get('mail.user_password.subject'))->with($this->password);
     }
 }

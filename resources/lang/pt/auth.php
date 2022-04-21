@@ -24,11 +24,16 @@ return [
     'user_pendent_or_blocked' => 'Seu usuário está pendente ou bloqueado',
     'user_not_found' => 'Usuário não encontrado',
     'unauthenticated' => 'Não autenticado',
-    'permission_denied' => 'Permissão negada',
     'access_denied' => 'Acesso negada',
     'token_expired' => 'Token expirado',
     'token_invalid' => 'Token inválido',
     'token_blacklisted' => 'Token na lista negra',
     'token_not_provided' => 'Token não fornecido',
-    'token_cannot_parse'=>'Token não pode ser formatado',
+    'token_cannot_parse' => 'Token não pode ser formatado',
+    'verify_email' => 'Seu endereço de e-mail não foi verificado',
+    'social_login_failed' => 'Falha no login social',
+    'login_failed' => 'Falha na autenticação',
+    'login_confirm_failed' => 'A confirmação de login falhou',
+    'logout_failed' => 'O logout falhou',
+    'register_failed' => 'Falha no registro'
 ];

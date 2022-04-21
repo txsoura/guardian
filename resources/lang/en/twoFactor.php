@@ -18,5 +18,7 @@ return [
         'message' => 'Cannot verify two-factor authentication',
         'error' => 'Invalid verification code',
     ],
-    'verified' => 'Two-factor authentication verified'
+    'verified' => 'Two-factor authentication verified',
+    'two_factor_resend_failed' => 'Two-factor resend failed',
+    'two_factor_recovery_failed' => 'Two-factor recovery failed'
 ];

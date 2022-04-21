@@ -18,5 +18,7 @@ return [
         'message' => 'No se puede verificar la autenticación de dos factores',
         'error' => 'código de verificación invalido',
     ],
-    'verified' => 'Autenticación de dos factores verificada'
+    'verified' => 'Autenticación de dos factores verificada',
+    'two_factor_resend_failed' => 'Reenvío de dos factores fallido',
+    'two_factor_recovery_failed' => 'Falló la recuperación de dos factores'
 ];

@@ -15,8 +15,8 @@ class CreateGuardianAclTables extends Migration
     {
 
         Schema::create('acl_permissions', function (Blueprint $table) {
-            $table->bigIncrements('id');
-            $table->string('name');
+            $table->id();
+            $table->string('name')->unique();
             $table->string('model');
             $table->string('description');
             $table->timestamps();
@@ -24,17 +24,20 @@ class CreateGuardianAclTables extends Migration
         });
 
         Schema::create('acl_roles', function (Blueprint $table) {
-            $table->bigIncrements('id');
-            $table->string('name');
+            $table->id();
+            $table->string('name')->unique();
             $table->string('description');
             $table->timestamps();
             $table->softDeletes();
         });
 
         Schema::create('acl_role_permissions', function (Blueprint $table) {
+            $table->id();
             $table->foreignId('acl_role_id')->references('id')->on('acl_roles')->onUpdate('cascade')->onDelete('cascade');
             $table->foreignId('acl_permission_id')->references('id')->on('acl_permissions')->onUpdate('cascade')->onDelete('cascade');
-            $table->primary(['acl_permission_id', 'acl_role_id']);
+            $table->timestamps();
+            
+            $table->unique(['acl_permission_id', 'acl_role_id']);
         });
     }
 

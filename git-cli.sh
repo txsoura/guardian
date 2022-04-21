@@ -12,7 +12,7 @@
 ###############################################################################
 
 
-git checkout develop
+git checkout master
 git fetch -p
-git pull origin develop
+git pull origin master
 

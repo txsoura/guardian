@@ -1,5 +1,5 @@
 pull:
-	git pull origin develop
+	git pull origin master
 
 git:
 	bash git-cli.sh

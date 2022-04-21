@@ -13,7 +13,7 @@ return [
     |
     */
 
-    'pendent_user' => (bool) env('AUTH_PENDENT_USER', false),
+    'pendent_user' => (bool)env('AUTH_PENDENT_USER', false),
 
     /*
     |--------------------------------------------------------------------------
@@ -27,7 +27,33 @@ return [
     |
     */
 
-    'default_role' => (int) env('AUTH_DEFAULT_ROLE', 1),
+    'default_role' => (int)env('AUTH_DEFAULT_ROLE', 1),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Allowed routes roles access
+    |--------------------------------------------------------------------------
+    |
+    | Must be defined which roles can access a route group.
+    |
+    */
+
+    'routes_allowed_roles' => [
+        'admin' => (array)explode(',', env('ADMIN_ROUTES_ALLOWED_ROLES')),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Allowed admin emails domains
+    |--------------------------------------------------------------------------
+    |
+    | Must be defined from which domains can admins roles emails be.
+    |
+    */
+
+    'allowed_admin_emails_domains' =>
+        (array)explode(',', env('ALLOWED_ADMIN_EMAILS_DOMAINS')),
+
 
     /*
     |--------------------------------------------------------------------------
@@ -141,4 +167,16 @@ return [
 
     'password_timeout' => 10800,
 
+    /*
+   |--------------------------------------------------------------------------
+   | Recovery Email
+   |--------------------------------------------------------------------------
+   |
+   | The expire time is the number of minutes that the reset email token should be
+   | considered valid. This security feature keeps tokens short-lived so
+   | they have less time to be guessed. You may change this as needed.
+   |
+   */
+
+    'recovery_email_timeout' => 10080
 ];

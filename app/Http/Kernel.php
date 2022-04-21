@@ -2,7 +2,36 @@
 
 namespace App\Http;
 
+use App\Http\Middleware\AccessTokenAuth;
+use App\Http\Middleware\AuthACL;
+use App\Http\Middleware\AuthStatusCheck;
+use App\Http\Middleware\CheckForMaintenanceMode;
+use App\Http\Middleware\CheckLocale;
+use App\Http\Middleware\EncryptCookies;
+use App\Http\Middleware\IntegrateAuth;
+use App\Http\Middleware\ResponseJson;
+use App\Http\Middleware\RoutesACL;
+use App\Http\Middleware\TelescopeAuth;
+use App\Http\Middleware\TrimStrings;
+use App\Http\Middleware\TrustHosts;
+use App\Http\Middleware\TrustProxies;
+use App\Http\Middleware\VerifyCsrfToken;
+use Fruitcake\Cors\HandleCors;
+use Illuminate\Auth\Middleware\AuthenticateWithBasicAuth;
+use Illuminate\Auth\Middleware\Authorize;
+use Illuminate\Auth\Middleware\EnsureEmailIsVerified;
+use Illuminate\Auth\Middleware\RequirePassword;
+use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Foundation\Http\Kernel as HttpKernel;
+use Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull;
+use Illuminate\Foundation\Http\Middleware\ValidatePostSize;
+use Illuminate\Http\Middleware\SetCacheHeaders;
+use Illuminate\Routing\Middleware\SubstituteBindings;
+use Illuminate\Routing\Middleware\ThrottleRequests;
+use Illuminate\Routing\Middleware\ValidateSignature;
+use Illuminate\Session\Middleware\StartSession;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Tymon\JWTAuth\Http\Middleware\Authenticate;
 
 class Kernel extends HttpKernel
 {
@@ -14,13 +43,13 @@ class Kernel extends HttpKernel
      * @var array
      */
     protected $middleware = [
-        // \App\Http\Middleware\TrustHosts::class,
-        \App\Http\Middleware\TrustProxies::class,
-        \Fruitcake\Cors\HandleCors::class,
-        \App\Http\Middleware\CheckForMaintenanceMode::class,
-        \Illuminate\Foundation\Http\Middleware\ValidatePostSize::class,
-        \App\Http\Middleware\TrimStrings::class,
-        \Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull::class,
+        TrustHosts::class,
+        TrustProxies::class,
+        HandleCors::class,
+        CheckForMaintenanceMode::class,
+        ValidatePostSize::class,
+        TrimStrings::class,
+        ConvertEmptyStringsToNull::class,
     ];
 
     /**
@@ -30,46 +59,50 @@ class Kernel extends HttpKernel
      */
     protected $middlewareGroups = [
         'web' => [
-            \App\Http\Middleware\EncryptCookies::class,
-            \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
-            \Illuminate\Session\Middleware\StartSession::class,
+            'throttle:60,1',
+            EncryptCookies::class,
+            AddQueuedCookiesToResponse::class,
+            StartSession::class,
             // \Illuminate\Session\Middleware\AuthenticateSession::class,
-            \Illuminate\View\Middleware\ShareErrorsFromSession::class,
-            \App\Http\Middleware\VerifyCsrfToken::class,
-            \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            ShareErrorsFromSession::class,
+            VerifyCsrfToken::class,
+            SubstituteBindings::class,
         ],
 
         'auth' => [
-            'throttle:60,1',
-            \App\Http\Middleware\ResponseJson::class,
-            \App\Http\Middleware\CheckLocale::class,
-            \App\Http\Middleware\AuthStatusCheck::class,
-            \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            'throttle:120,1',
+            ResponseJson::class,
+            CheckLocale::class,
+            StartSession::class,
+            SubstituteBindings::class,
         ],
 
-        'api' => [
+        'admin' => [
             'throttle:60,1',
-            \App\Http\Middleware\ResponseJson::class,
-            \App\Http\Middleware\CheckLocale::class,
-            \App\Http\Middleware\AuthStatusCheck::class,
-            \App\Http\Middleware\AuthACL::class,
-            \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            ResponseJson::class,
+            CheckLocale::class,
+            Authenticate::class,
+            AuthStatusCheck::class,
+            RoutesACL::class,
+            AuthACL::class,
+            SubstituteBindings::class,
         ],
 
         'accessToken' => [
             'throttle:60,1',
-            \App\Http\Middleware\ResponseJson::class,
-            \App\Http\Middleware\CheckLocale::class,
-            \App\Http\Middleware\AccessTokenAuth::class,
+            ResponseJson::class,
+            CheckLocale::class,
+            AccessTokenAuth::class,
             // \App\Http\Middleware\AccessTokenACL::class,
-            \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            SubstituteBindings::class,
         ],
 
         'integrate' => [
-            \App\Http\Middleware\ResponseJson::class,
-            \App\Http\Middleware\CheckLocale::class,
-            \App\Http\Middleware\IntegrateAuth::class,
-        ]
+            'throttle:60,1',
+            ResponseJson::class,
+            CheckLocale::class,
+            IntegrateAuth::class,
+        ],
     ];
 
     /**
@@ -80,14 +113,15 @@ class Kernel extends HttpKernel
      * @var array
      */
     protected $routeMiddleware = [
-        'auth' => \App\Http\Middleware\Authenticate::class,
-        'auth.basic' => \Illuminate\Auth\Middleware\AuthenticateWithBasicAuth::class,
-        'bindings' => \Illuminate\Routing\Middleware\SubstituteBindings::class,
-        'cache.headers' => \Illuminate\Http\Middleware\SetCacheHeaders::class,
-        'can' => \Illuminate\Auth\Middleware\Authorize::class,
-        'password.confirm' => \Illuminate\Auth\Middleware\RequirePassword::class,
-        'signed' => \Illuminate\Routing\Middleware\ValidateSignature::class,
-        'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
-        'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
+        'auth.basic' => AuthenticateWithBasicAuth::class,
+        'bindings' => SubstituteBindings::class,
+        'cache.headers' => SetCacheHeaders::class,
+        'can' => Authorize::class,
+        'password.confirm' => RequirePassword::class,
+        'signed' => ValidateSignature::class,
+        'throttle' => ThrottleRequests::class,
+        'verified' => EnsureEmailIsVerified::class,
+        'auth.status' => AuthStatusCheck::class,
+        'telescope.auth' => TelescopeAuth::class,
     ];
 }

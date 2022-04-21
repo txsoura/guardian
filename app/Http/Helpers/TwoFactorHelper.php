@@ -4,103 +4,110 @@ namespace App\Http\Helpers;
 
 use App\Enums\TwoFactorProvider;
 use App\Enums\UserStatus;
-use App\Events\TwoFactorVerify;
-use App\Models\TwoFactorToken;
 use App\Models\User;
-use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Str;
+use Twilio\Exceptions\ConfigurationException;
+use Twilio\Exceptions\TwilioException;
 
 class TwoFactorHelper
 {
-    // Verify user
-    public static function verify($id, $code)
+    /**
+     * verify user
+     *
+     * @param int $id
+     * @param string $code
+     * @param string|null $provider
+     * @return boolean
+     * @throws ConfigurationException|TwilioException
+     */
+    public static function verify(int $id, string $code, string $provider = null): bool
     {
-        $user = User::where('id', $id)->where('status', '!=', UserStatus::BLOCKED)->where('two_factor_provider', '!=', null)->firstOrFail();
+        $user = User::whereId($id)
+            ->where('status', '!=', UserStatus::BLOCKED)
+            ->when(!$provider, function ($query) {
+                return $query->whereNotNull('two_factor_provider');
+            })
+            ->firstOrFail();
 
-        switch ($user->two_factor_provider) {
+        switch ($provider ?: $user->two_factor_provider) {
             case TwoFactorProvider::SMS:
-                $verification = TwilioHelper::verify()->verificationChecks->create($code, array('to' =>  '+' . $user->cellphone));
+                $verification = TwilioHelper::verify()
+                    ->verificationChecks
+                    ->create($code, array('to' => '+' . $user->cellphone));
 
                 if (!$verification->valid) {
-                    return  false;
+                    return false;
                 }
 
                 return true;
-                break;
 
             case TwoFactorProvider::MAIL:
-                if (TwoFactorHelper::checkToken($user, $code)) {
-                    return true;
+                $verification = TwilioHelper::verify()
+                    ->verificationChecks
+                    ->create($code, array('to' => $user->email));
+
+                if (!$verification->valid) {
+                    return false;
                 }
 
-                return false;
-                break;
+                return true;
+
+            case TwoFactorProvider::GOOGLE_AUTHENTICATOR:
+                return TotpHelper::verify($user->getTotpSecret(), $code);
 
             default:
                 return false;
-                break;
         }
-
-        return false;
     }
 
-    // send user verify code
-    public static function send($id)
+    /**
+     * send user verify code
+     *
+     * @param int $id
+     * @param string|null $provider
+     * @return false|JsonResponse
+     * @throws ConfigurationException|TwilioException
+     */
+    public static function send(int $id, string $provider = null)
     {
-        $user = User::where('id', $id)->where('status', '!=', UserStatus::BLOCKED)->where('two_factor_provider', '!=', null)->firstOrFail();
+        $user = User::whereId($id)
+            ->where('status', '!=', UserStatus::BLOCKED)
+            ->when(!$provider, function ($query) {
+                return $query->whereNotNull('two_factor_provider');
+            })
+            ->firstOrFail();
 
-        switch ($user->two_factor_provider) {
+        switch ($provider ?: $user->two_factor_provider) {
             case TwoFactorProvider::SMS:
-                TwilioHelper::verify()->verifications->create('+' . $user->cellphone, TwoFactorProvider::SMS);
-                return  new JsonResponse([
+                TwilioHelper::verify()
+                    ->verifications
+                    ->create('+' . $user->cellphone, TwoFactorProvider::SMS, ["locale" => $user->lang]);
+
+                return new JsonResponse([
                     'message' => trans('cellphone.sent'),
                     'email' => $user->email,
                     'provider' => TwoFactorProvider::SMS
-                ], 200);
-                break;
-
-            case TwoFactorProvider::MAIL:
-                $code = Str::random(6);
-
-                TwoFactorToken::create([
-                    'expiration' => Carbon::parse(now())->addMinute(5),
-                    'code' => $code,
-                    'user_id' => $user->id,
-                    'provider' => TwoFactorProvider::MAIL
                 ]);
 
-                event(new TwoFactorVerify($user, $code));
-                return  new JsonResponse([
+            case TwoFactorProvider::MAIL:
+                TwilioHelper::verify()
+                    ->verifications
+                    ->create($user->email, 'email', ["locale" => $user->lang]);
+
+                return new JsonResponse([
                     'message' => trans('email.sent'),
                     'email' => $user->email,
                     'provider' => TwoFactorProvider::MAIL
-                ], 200);
-                break;
+                ]);
+
+            case TwoFactorProvider::GOOGLE_AUTHENTICATOR:
+                return new JsonResponse([
+                    'message' => trans('totp.verify_app'),
+                    'provider' => TwoFactorProvider::GOOGLE_AUTHENTICATOR
+                ]);
 
             default:
                 return false;
-                break;
         }
-    }
-
-    //Check token in two_factor_token table
-    public static function checkToken(User $user, $code)
-    {
-        $twoFactorToken = TwoFactorToken::where('provider', $user->two_factor_provider)
-            ->where('code', $code)
-            ->where('expiration', '>=', now())
-            ->where('user_id', $user->id)
-            ->where('used', false)
-            ->first();
-
-        if ($twoFactorToken) {
-            $twoFactorToken->used = true;
-            $twoFactorToken->update();
-
-            return true;
-        }
-
-        return false;
     }
 }

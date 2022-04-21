@@ -14,7 +14,7 @@ class CreateAccessTokensTable extends Migration
     public function up()
     {
         Schema::create('access_tokens', function (Blueprint $table) {
-            $table->bigIncrements('id');
+            $table->id();
             $table->string('name');
             $table->string('token', 64)->unique();
             $table->text('abilities');

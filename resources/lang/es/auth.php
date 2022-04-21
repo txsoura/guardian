@@ -24,11 +24,16 @@ return [
     'user_pendent_or_blocked' => 'Tu usuario es pendiente o bloqueado',
     'user_not_found' => 'Usuario no encontrado',
     'unauthenticated' => 'Sin autenticar',
-    'permission_denied' => 'Permiso denegado',
     'access_denied' => 'Acceso denegado',
     'token_expired' => 'Token caducado',
     'token_invalid' => 'Token inválido',
     'token_blacklisted' => 'Token en la lista negra',
     'token_not_provided' => 'Token no proporcionado',
-    'token_cannot_parse'=>'Token no se puede analizar',
+    'token_cannot_parse' => 'Token no se puede analizar',
+    'verify_email' => 'Su dirección de correo electrónico no está verificada',
+    'social_login_failed' => 'Falló el inicio de sesión social',
+    'login_failed' => 'Error de inicio de sesion',
+    'login_confirm_failed' => 'Error de confirmación de inicio de sesión',
+    'logout_failed' => 'Error de cierre de sesión',
+    'register_failed' => 'Registro fallido'
 ];

@@ -12,4 +12,12 @@ return [
     'no_access' => 'No tiene acceso al sistema, comuníquese con el soporte.',
     'role_not_found' => 'Papel no encontrado',
     'invalid_signature' => 'Firma inválida',
+    'contact_support' => 'Comuníquese con el soporte',
+    'approved' => 'Aprobado con éxito',
+    'blocked' => 'Bloqueado exitosamente',
+    'approve_failed' => 'Aprobar fallido',
+    'block_failed' => 'Bloquear falló',
+    'uploaded' => 'Subido con éxito',
+    'upload_failed' => 'Subida fallida',
+    'too_many_requests' => '¡Ops, pasó algo! Inténtelo de nuevo en unos minutos.'
 ];

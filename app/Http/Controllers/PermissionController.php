@@ -4,7 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\PermissionResource;
 use App\Models\Permission;
+use Exception;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Str;
 
 class PermissionController extends Controller
@@ -12,34 +15,32 @@ class PermissionController extends Controller
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return AnonymousResourceCollection
      */
-    public function index()
+    public function index(): AnonymousResourceCollection
     {
         return PermissionResource::collection(
             Permission::orderBy('created_at', 'desc')
-                ->get(),
-            200
+                ->get()
         );
     }
 
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @param Request $request
+     * @return PermissionResource
      */
-    public function store(Request $request)
+    public function store(Request $request): PermissionResource
     {
         $request['name'] = Str::lower($request['name']);
         $request['model'] = Str::lower($request['model']);
 
         $request->validate([
-            'name' => 'required|string|unique:acl_permissions',
+            'name' => 'required|string|unique:acl_permissions,name',
             'model' => 'required|string',
             'description' => 'required|string'
         ]);
-
 
         $permission = Permission::create($request->all());
 
@@ -49,50 +50,50 @@ class PermissionController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  Permission $permission
-     * @return \Illuminate\Http\Response
+     * @param Permission $permission
+     * @return PermissionResource
      */
-    public function show(Permission $permission)
+    public function show(Permission $permission): PermissionResource
     {
-        return new PermissionResource(
-            $permission,
-            200
-        );
+        return new PermissionResource($permission);
     }
 
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  Permission $permission
-     * @return \Illuminate\Http\Response
+     * @param Request $request
+     * @param Permission $permission
+     * @return PermissionResource
      */
-    public function update(Request $request, Permission $permission)
+    public function update(Request $request, Permission $permission): PermissionResource
     {
-        $request['name'] = Str::lower($request['name']);
-        $request['model'] = Str::lower($request['model']);
+        if ($request['name'])
+            $request['name'] = Str::lower($request['name']);
+        if ($request['model'])
+            $request['model'] = Str::lower($request['model']);
 
         $request->validate([
-            'name' => 'string|unique:acl_permissions',
-            'model' => 'string',
-            'description' => 'string'
+            'name' => 'sometimes|required|string|unique:acl_permissions,name',
+            'model' => 'sometimes|required|string',
+            'description' => 'sometimes|required|string'
         ]);
-
 
         $permission->update($request->all());
 
-        return new PermissionResource($permission, 200);
+        return new PermissionResource($permission);
     }
 
     /**
      * Remove the specified resource from storage.
      *
-     * @param  Permission $permission
-     * @return \Illuminate\Http\Response
+     * @param Permission $permission
+     * @return JsonResponse
+     * @throws Exception
      */
-    public function destroy(Permission $permission)
+    public function destroy(Permission $permission): JsonResponse
     {
         $permission->delete();
-        return response()->json(['message' => trans('message.deleted')], 200);
+
+        return response()->json(['message' => trans('message.deleted')]);
     }
 }

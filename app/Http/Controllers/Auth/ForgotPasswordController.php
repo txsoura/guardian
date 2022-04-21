@@ -3,11 +3,12 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use Illuminate\Contracts\Auth\PasswordBroker;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Password;
-use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class ForgotPasswordController extends Controller
 {
@@ -26,10 +27,11 @@ class ForgotPasswordController extends Controller
     /**
      * Send a reset link to the given user.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
+     * @param Request $request
+     * @return JsonResponse
+     * @throws ValidationException
      */
-    public function sendResetLinkEmail(Request $request)
+    public function sendResetLinkEmail(Request $request): JsonResponse
     {
         $this->validateEmail($request);
 
@@ -48,7 +50,7 @@ class ForgotPasswordController extends Controller
     /**
      * Validate the email for the given request.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param Request $request
      * @return void
      */
     protected function validateEmail(Request $request)
@@ -60,10 +62,10 @@ class ForgotPasswordController extends Controller
     /**
      * Get the needed authentication credentials from the request.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param Request $request
      * @return array
      */
-    protected function credentials(Request $request)
+    protected function credentials(Request $request): array
     {
         return $request->only('email');
     }
@@ -71,21 +73,22 @@ class ForgotPasswordController extends Controller
     /**
      * Get the response for a successful password reset link.
      *
-     * @param  string  $response
-     * @return \Illuminate\Http\JsonResponse
+     * @param string $response
+     * @return JsonResponse
      */
-    protected function sendResetLinkResponse($response)
+    protected function sendResetLinkResponse(string $response): JsonResponse
     {
-        return new JsonResponse(['message' => trans($response)], 200);
+        return new JsonResponse(['message' => trans($response)]);
     }
 
     /**
      * Get the response for a failed password reset link.
      *
-     * @param  string  $response
-     * @return \Illuminate\Http\JsonResponse
+     * @param string $response
+     * @return JsonResponse
+     * @throws ValidationException
      */
-    protected function sendResetLinkFailedResponse($response)
+    protected function sendResetLinkFailedResponse(string $response): JsonResponse
     {
         throw ValidationException::withMessages([
             'email' => [trans($response)],
@@ -95,9 +98,9 @@ class ForgotPasswordController extends Controller
     /**
      * Get the broker to be used during password reset.
      *
-     * @return \Illuminate\Contracts\Auth\PasswordBroker
+     * @return PasswordBroker
      */
-    public function broker()
+    public function broker(): PasswordBroker
     {
         return Password::broker();
     }

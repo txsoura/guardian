@@ -11,5 +11,9 @@ return [
     'verify' => [
         'message' => 'Não é possível verificar o celular',
         'error' => 'Código de verificação inválido',
+    ],
+    'update' => [
+        'message' => 'Não é possível atualizar o celular',
+        'error' => 'Você só pode alterar o seu celular, duas semanas após a verificação do celular atual',
     ]
 ];

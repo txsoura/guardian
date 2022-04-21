@@ -2,17 +2,22 @@
 
 namespace App\Exceptions;
 
-use Throwable;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Eloquent\RelationNotFoundException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Exceptions\InvalidSignatureException;
+use Illuminate\Support\Facades\Log;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 use Symfony\Component\Routing\Exception\RouteNotFoundException;
+use Throwable;
+use Twilio\Exceptions\RestException;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use Tymon\JWTAuth\Exceptions\TokenBlacklistedException;
 use Tymon\JWTAuth\Exceptions\TokenExpiredException;
@@ -26,7 +31,7 @@ class Handler extends ExceptionHandler
      * @var array
      */
     protected $dontReport = [
-        //
+        CustomException::class
     ];
 
     /**
@@ -42,10 +47,10 @@ class Handler extends ExceptionHandler
     /**
      * Report or log an exception.
      *
-     * @param  \Throwable  $exception
+     * @param Throwable $exception
      * @return void
      *
-     * @throws \Throwable
+     * @throws Throwable
      */
     public function report(Throwable $exception)
     {
@@ -55,14 +60,45 @@ class Handler extends ExceptionHandler
     /**
      * Render an exception into an HTTP response.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Throwable  $exception
-     * @return \Symfony\Component\HttpFoundation\Response
+     * @param Request $request
+     * @param Throwable $exception
+     * @return Response
      *
-     * @throws \Throwable
+     * @throws Throwable
      */
-    public function render($request, Throwable $exception)
+    public function render($request, Throwable $exception): Response
     {
+        if ($exception instanceof RouteNotFoundException && $request->wantsJson()) {
+            return response()->json([
+                'message' => trans('message.not_found'),
+                'error' => trans('message.route_not_found')
+            ], 404);
+        }
+
+        if ($exception instanceof MethodNotAllowedHttpException && $request->wantsJson()) {
+            return response()->json([
+                'error' => $exception->getMessage()
+            ], 405);
+        }
+
+        if ($exception instanceof ThrottleRequestsException && $request->wantsJson()) {
+            return response()->json([
+                'error' => trans('message.too_many_requests')
+            ], 429);
+        }
+
+        if ($exception instanceof InvalidSignatureException && $request->wantsJson()) {
+            return response()->json([
+                'error' => trans('message.invalid_signature')
+            ], 403);
+        }
+
+        if ($exception instanceof AccessDeniedHttpException && $request->wantsJson()) {
+            return response()->json([
+                'message' => trans('message.no_permission'),
+                'error' => trans('auth.access_denied')
+            ], 403);
+        }
 
         if ($exception instanceof ModelNotFoundException && $request->wantsJson()) {
             return response()->json([
@@ -78,21 +114,17 @@ class Handler extends ExceptionHandler
             ], 404);
         }
 
-        if ($exception instanceof AccessDeniedHttpException && $request->wantsJson()) {
+        if ($exception instanceof NotFoundHttpException && $request->wantsJson()) {
             return response()->json([
-                'message' => trans('message.no_permission'),
-                'error' => trans('auth.access_denied')
-            ], 403);
-        }
-
-        if ($exception instanceof InvalidSignatureException && $request->wantsJson()) {
-            return response()->json([
-                'error' => trans('message.invalid_signature')
-            ], 403);
+                'message' => trans('message.not_found'),
+                'error' => trans('message.route_not_found')
+            ], 404);
         }
 
         if ($exception instanceof UnauthorizedHttpException) {
+
             $preException = $exception->getPrevious();
+
             if ($preException instanceof
                 TokenExpiredException
             ) {
@@ -100,19 +132,22 @@ class Handler extends ExceptionHandler
                     'message' => trans('auth.unauthenticated'),
                     'error' => trans('auth.token_expired')
                 ], 401);
-            } else if ($preException instanceof
-                TokenInvalidException
-            ) {
-                return response()->json([
-                    'message' => trans('auth.unauthenticated'),
-                    'error' => trans('auth.token_invalid')
-                ], 401);
+
             } else if ($preException instanceof
                 TokenBlacklistedException
             ) {
                 return response()->json([
                     'message' => trans('auth.unauthenticated'),
                     'error' => trans('auth.token_blacklisted')
+                ], 401);
+
+
+            } else if ($preException instanceof
+                TokenInvalidException
+            ) {
+                return response()->json([
+                    'message' => trans('auth.unauthenticated'),
+                    'error' => trans('auth.token_invalid')
                 ], 401);
             } else if ($preException instanceof
                 JWTException
@@ -154,27 +189,28 @@ class Handler extends ExceptionHandler
             ], 401);
         }
 
-        if ($exception instanceof MethodNotAllowedHttpException && $request->wantsJson()) {
+        if ($exception instanceof
+            HttpException
+        ) {
+            if ($exception->getMessage() === 'Your email address is not verified.') {
+                return response()->json([
+                    'message' => trans('message.no_permission'),
+                    'error' => trans('auth.verify_email')
+                ], 403);
+            }
+
             return response()->json([
-                'error' => $exception->getMessage()
-            ], 405);
+                'message' => trans('message.no_permission'),
+            ], 403);
         }
 
-        if ($exception instanceof NotFoundHttpException && $request->wantsJson()) {
+        if ($exception instanceof RestException && $request->wantsJson()) {
+            Log::error('TWILIO_VERIFY:' . $exception->getMessage());
+
             return response()->json([
-                'message' => trans('message.not_found'),
-                'error' => trans('message.route_not_found')
-            ], 404);
+                'error' => trans('twoFactor.verify.message')
+            ], 400);
         }
-
-
-        if ($exception instanceof RouteNotFoundException && $request->wantsJson()) {
-            return response()->json([
-                'message' => trans('message.not_found'),
-                'error' => trans('message.route_not_found')
-            ], 404);
-        }
-
 
         return parent::render($request, $exception);
     }

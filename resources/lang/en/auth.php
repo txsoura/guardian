@@ -24,11 +24,16 @@ return [
     'user_pendent_or_blocked' => 'Your user is pendent or blocked',
     'user_not_found' => 'User not found',
     'unauthenticated' => 'Unauthenticated',
-    'permission_denied' => 'Permission denied',
     'access_denied' => 'Access denied',
     'token_expired' => 'Token expired',
     'token_invalid' => 'Token invalid',
     'token_blacklisted' => 'Token blacklisted',
     'token_not_provided' => 'Token not provided',
-    'token_cannot_parse'=>'Token cannot be parsed',
+    'token_cannot_parse' => 'Token cannot be parsed',
+    'verify_email' => 'Your email address is not verified',
+    'social_login_failed' => 'Social login failed',
+    'login_failed' => 'Login failed',
+    'login_confirm_failed' => 'Login confirm failed',
+    'logout_failed' => 'Logout failed',
+    'register_failed' => 'Register failed'
 ];

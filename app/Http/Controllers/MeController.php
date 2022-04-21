@@ -2,195 +2,202 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\CustomException;
 use App\Http\Helpers\TwilioHelper;
 use App\Http\Resources\UserResource;
+use App\Mail\Cellphone;
 use App\Models\AccessToken;
 use App\Models\User;
+use App\Services\UserService;
+use Exception;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Mail;
+use Twilio\Exceptions\ConfigurationException;
+use Twilio\Exceptions\RestException;
+use Twilio\Exceptions\TwilioException;
 
 class MeController extends Controller
 {
     /**
+     * @var UserService
+     */
+    protected $service;
+
+    /**
+     * UserController constructor.
+     */
+    public function __construct(UserService $service)
+    {
+        $this->service = $service;
+    }
+
+    /**
      * Get the authenticated User.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
+     * @param Request $request
+     * @return UserResource
      */
-    public function show(Request $request)
+    public function show(Request $request): UserResource
     {
         if (auth()->user()) {
-            return new UserResource(auth()->user(), 200);
+            return new UserResource(auth()->user());
         } else {
             $token = $request->header('Authorization');
             $accessToken = AccessToken::where('token', $token)->first();
             $user = User::find($accessToken->user_id);
 
-            return new UserResource($user, 200);
+            return new UserResource($user);
         }
     }
 
     /**
      * Update the authenticated User.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @param Request $request
+     * @return JsonResponse|UserResource|null
      */
     public function update(Request $request)
     {
-        $request->validate([
-            'name' => 'required|string',
-        ]);
+        $user = $this->service
+            ->setRequest($request)
+            ->update(auth()->user()->id);
 
-        $user = User::find(auth()->user()->id);
+        if (!$user) {
+            return response()->json([
+                'message' => trans('core::message.update_failed')
+            ], 400);
+        }
 
-        $user->name = ucwords($request['name']);
-        $user->update();
-
-        return new UserResource($user, 200);
+        return (new UserResource($user))
+            ->additional(['message' => trans('core::message.updated')]);
     }
 
     /**
      * Update the authenticated User email.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @param Request $request
+     * @return JsonResponse|UserResource|null
+     * @throws TwilioException
+     * @throws CustomException|RestException
      */
     public function updateEmail(Request $request)
     {
-        $request['email'] = Str::lower($request['email']);
+        $user = $this->service
+            ->setRequest($request)
+            ->updateEmail(auth()->user());
 
-        $request->validate([
-            'email' => 'required|string|email|unique:users',
-        ]);
-
-        $user = User::find(auth()->user()->id);
-
-        $user->email = $request['email'];
-        $user->email_verified_at = null;
-        $user->update();
-
-        if ($user->email) {
-            $user->sendEmailVerificationNotification();
+        if (!$user) {
+            return response()->json([
+                'message' => trans('core::message.update_failed')
+            ], 400);
         }
 
-        return new UserResource($user, 200);
+        return (new UserResource($user))
+            ->additional(['message' => trans('core::message.updated')]);
     }
 
     /**
      * Update the authenticated User cellphone.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @param Request $request
+     * @return JsonResponse|UserResource|null
+     * @throws ConfigurationException|TwilioException|CustomException
      */
     public function updateCellphone(Request $request)
     {
-        $request->validate([
-            'cellphone' => 'nullable|numeric|unique:users',
-        ]);
+        $user = $this->service
+            ->setRequest($request)
+            ->updateCellphone(auth()->user());
 
-        $user = User::find(auth()->user()->id);
-
-        $user->cellphone = $request['cellphone'];
-        $user->cellphone_verified_at = null;
-        $user->update();
-
-        if ($user->cellphone) {
-            TwilioHelper::verify()->verifications->create('+' . $user->cellphone, 'sms');
+        if (!$user) {
+            return response()->json([
+                'message' => trans('core::message.update_failed')
+            ], 400);
         }
 
-        return new UserResource($user, 200);
+        Mail::to($user->email)->queue(new Cellphone);
+
+        TwilioHelper::verify()
+            ->verifications
+            ->create('+' . $user->cellphone, 'sms');
+
+        return (new UserResource($user))
+            ->additional(['message' => trans('core::message.updated')]);
     }
 
     /**
      * Update the authenticated User password.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @param Request $request
+     * @return JsonResponse
+     * @throws CustomException
      */
-    public function updatePassword(Request $request)
+    public function updatePassword(Request $request): JsonResponse
     {
-        $request->validate([
-            'current_password' => 'required|string',
-            'password' => 'required|string|min:8|different:current_password|confirmed',
-        ]);
+        $response = $this->service
+            ->setRequest($request)
+            ->updatePassword(auth()->user());
 
-        $user = User::find(auth()->user()->id);
-
-        if (password_verify($request['current_password'], $user->password)) {
-            $user->password = Hash::make($request['password']);
-            $user->update();
-
+        if (!$response) {
             return response()->json([
-                'message' => trans('passwords.updated'),
-            ], 200);
+                'message' => trans('core::message.update_failed')
+            ], 400);
         }
 
         return response()->json([
-            'message' => trans('passwords.update.message'),
-            'error' => trans('passwords.update.error')
-        ], 422);
+            'message' => trans('passwords.updated'),
+        ]);
     }
 
     /**
      * Upload a newly created resource or update avatar image in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @param Request $request
+     * @return JsonResponse|UserResource
      */
     public function uploadAvatar(Request $request)
     {
-        $request->validate([
-            'avatar' => 'required|max:2000|image',
-        ]);
+        $user = $this->service
+            ->setRequest($request)
+            ->uploadAvatar(auth()->user());
 
-        $user = User::find(auth()->user()->id);
-
-        $disk = Storage::disk('public');
-
-        if ($user->avatar) {
-            $disk->delete($user->avatar);
+        if (!$user) {
+            return response()->json([
+                'message' => trans('message.upload_failed')
+            ], 400);
         }
 
-        $folders = array_merge(['users', 'avatars'], str_split($user->id));
-        $dir = implode('/', $folders);
-        $name = time() . '.' . $request->avatar->getClientOriginalExtension();
-
-        if (!$disk->has($dir)) {
-            $disk->makeDirectory($dir);
-        }
-
-        $path = $disk->putFileAs($dir, $request->avatar, $name);
-
-        $user->avatar = $path;
-        $user->update();
-
-        return new UserResource($user, 201);
+        return (new UserResource($user))
+            ->additional(['message' => trans('message.uploaded')]);
     }
 
     /**
      * Remove the authenticated User.
      *
-     * @return \Illuminate\Http\Response
+     * @return JsonResponse
+     * @throws Exception
      */
-    public function destroy()
+    public function destroy(): JsonResponse
     {
         $user = User::find(auth()->user()->id);
         auth()->invalidate(true);
         $user->delete();
 
-        return response()->json(['message' => trans('message.deleted')], 200);
+        return response()->json(['message' => trans('message.deleted')]);
     }
 
     /**
      * Get the authenticated User permissions.
      *
-     * @return \Illuminate\Http\JsonResponse
+     * @return UserResource
      */
-    public function permissions()
+    public function permissions(): UserResource
     {
-        return new UserResource(User::where('id',auth()->user()->id)->with('permissions')->first(), 200);
+        return new UserResource(
+            User::where('id', auth()->user()->id)
+                ->with('permissions')
+                ->first()
+        );
     }
 }

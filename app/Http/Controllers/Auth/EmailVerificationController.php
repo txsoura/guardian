@@ -3,11 +3,14 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Auth\Access\AuthorizationException;
+use App\Http\Helpers\TwilioHelper;
+use App\Models\User;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Foundation\Auth\VerifiesEmails;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Twilio\Exceptions\ConfigurationException;
+use Twilio\Exceptions\TwilioException;
 
 class EmailVerificationController extends Controller
 {
@@ -31,71 +34,77 @@ class EmailVerificationController extends Controller
      */
     public function __construct()
     {
-        $this->middleware('jwt.auth');
-        $this->middleware('signed')->only('verify');
-        $this->middleware('throttle:6,1')->only('verify', 'resend');
+        $this->middleware('jwt.auth')->only('resend');
+        $this->middleware('throttle:10,1')->only('verify', 'resend');
     }
 
     /**
      * Mark the authenticated user's email address as verified.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
-     *
-     * @throws \Illuminate\Auth\Access\AuthorizationException
+     * @param Request $request
+     * @return JsonResponse
+     * @throws ConfigurationException|TwilioException
      */
-    public function verify(Request $request)
+    public function verify(Request $request): JsonResponse
     {
-        if (!hash_equals((string) $request->route('id'), (string) $request->user()->getKey())) {
-            throw new AuthorizationException();
+        $request->validate([
+            'email' => 'required|email|exists:users,email',
+            'code' => 'required|string|digits:6',
+        ]);
+
+        $user = User::whereEmail($request['email'])->first();
+
+        if ($user->hasVerifiedEmail()) {
+            return $this->alreadyVerified();
         }
 
-        if (!hash_equals((string) $request->route('hash'), sha1($request->user()->getEmailForVerification()))) {
-            throw new AuthorizationException;
+        $verification = TwilioHelper::verify()
+            ->verificationChecks
+            ->create($request['code'], array('to' => $user->email));
+
+        if (!$verification->valid) {
+            return new JsonResponse(['message' => trans('email.invalid_verification_code')], 400);
         }
 
-        if ($request->user()->hasVerifiedEmail()) {
-            return  $this->alreadyVerified();
+        if ($user->markEmailAsVerified()) {
+            event(new Verified($user));
         }
 
-        if ($request->user()->markEmailAsVerified()) {
-            event(new Verified($request->user()));
-        }
-
-        if ($response = $this->verified($request)) {
+        if ($response = $this->verified()) {
             return $response;
         }
 
-        return  new JsonResponse([], 204);
+        return new JsonResponse(['message' => trans('email.verify_failed')], 400);
     }
 
     /**
      * The user has been verified.
      *
-     * @return mixed
+     * @return JsonResponse
      */
-    protected function verified()
+    protected function verified(): JsonResponse
     {
-        return  new JsonResponse(['message' => trans('email.verified')], 200);
+        return new JsonResponse(['message' => trans('email.verified')]);
     }
 
     /**
      * The email already verified.
      *
-     * @return mixed
+     * @return JsonResponse
      */
-    protected function alreadyVerified()
+    protected function alreadyVerified(): JsonResponse
     {
-        return  new JsonResponse(['message' => trans('email.already_verified')], 200);
+        return new JsonResponse(['message' => trans('email.already_verified')]);
     }
 
     /**
      * Resend the email verification notification.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
+     * @param Request $request
+     * @return JsonResponse
+     * @throws ConfigurationException|TwilioException
      */
-    public function resend(Request $request)
+    public function resend(Request $request): JsonResponse
     {
         if ($request->user()->hasVerifiedEmail()) {
             return $this->alreadyVerified();
@@ -103,6 +112,6 @@ class EmailVerificationController extends Controller
 
         $request->user()->sendEmailVerificationNotification();
 
-        return  new JsonResponse(['message' => trans('email.sent')], 200);
+        return new JsonResponse(['message' => trans('email.sent')]);
     }
 }

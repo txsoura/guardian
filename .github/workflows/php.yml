@@ -13,8 +13,6 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-      with:
-        php-version: '7.4'
 
     - name: Validate composer.json and composer.lock
       run: composer validate
@@ -30,4 +28,7 @@ jobs:
           ${{ runner.os }}-php-
 
     - name: Install dependencies
-      run: composer install --prefer-dist --no-progress
+      uses: php-actions/composer@v6
+      with:
+        php_version: "7.4"
+#       run: composer install --prefer-dist --no-progress
